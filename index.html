@@ -1,114 +1,117 @@
-
 <!DOCTYPE html>
 <html lang="ar">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>مغامرة النحلة الزوينة</title>
+    <title>مغامرة النحلة الخارقة</title>
     <style>
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #87CEEB; font-family: 'Arial', sans-serif; }
-        canvas { display: block; background: linear-gradient(#87CEEB, #E0F7FA); }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #87CEEB; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        canvas { display: block; }
         
-        /* واجهة النقط */
-        #ui { position: fixed; top: 20px; width: 100%; text-align: center; font-size: 30px; font-weight: bold; color: #FFD700; text-shadow: 2px 2px #000; pointer-events: none; }
-        
-        /* أزرار التحكم (يمين ويسار) */
-        .controls { position: fixed; bottom: 30px; width: 100%; display: flex; justify-content: space-around; padding: 0 20px; box-sizing: border-box; }
-        .move-btn { width: 80px; height: 80px; background: rgba(255, 255, 255, 0.7); border: 5px solid #FFD700; border-radius: 50%; font-size: 40px; display: flex; align-items: center; justify-content: center; touch-action: none; }
+        /* واجهة المعلومات العلوي */
+        #top-bar { 
+            position: fixed; top: 10px; width: 100%; display: flex; justify-content: space-around;
+            font-size: 24px; font-weight: bold; color: #fff; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); pointer-events: none;
+        }
+        .stat-item { background: rgba(255, 255, 255, 0.2); padding: 5px 15px; border-radius: 20px; backdrop-filter: blur(5px); }
+
+        /* أزرار التحكم العملاقة */
+        .controls { position: fixed; bottom: 30px; width: 100%; display: flex; justify-content: space-between; padding: 0 30px; box-sizing: border-box; }
+        .btn { 
+            width: 90px; height: 90px; background: rgba(255, 255, 255, 0.4); 
+            border: 4px solid #fff; border-radius: 50%; font-size: 45px; 
+            display: flex; align-items: center; justify-content: center; 
+            box-shadow: 0 8px 15px rgba(0,0,0,0.1); touch-action: none;
+        }
+        .btn:active { transform: scale(0.9); background: #FFD700; }
     </style>
 </head>
 <body>
 
-<div id="ui">🌸 الورد: <span id="score">0</span></div>
-
-<div class="controls">
-    <div class="move-btn" id="left">⬅️</div>
-    <div class="move-btn" id="right">➡️</div>
+<div id="top-bar">
+    <div class="stat-item">🌸 <span id="score">0</span></div>
+    <div class="stat-item">⭐ المستوى: <span id="level">1</span></div>
 </div>
 
-<canvas id="game"></canvas>
+<div class="controls">
+    <div class="btn" id="l">⬅️</div>
+    <div class="btn" id="r">➡️</div>
+</div>
+
+<canvas id="g"></canvas>
 
 <script>
-    const canvas = document.getElementById('game');
-    const ctx = canvas.getContext('2d');
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    const canvas = document.getElementById('g'), ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
 
-    let score = 0;
-    let playing = true;
-    const player = { x: canvas.width / 2, y: canvas.height - 120, w: 60, h: 60, speed: 7 };
-    const items = [];
+    let score = 0, level = 1, gameActive = true;
+    let player = { x: canvas.width / 2 - 30, y: canvas.height - 130, w: 60 };
+    let items = [], clouds = [];
+    let moveLeft = false, moveRight = false;
 
-    // تحكم اللمس
-    let moveLeft = false;
-    let moveRight = false;
+    // توليد السحاب للخلفية
+    for(let i=0; i<5; i++) clouds.push({x: Math.random()*canvas.width, y: Math.random()*canvas.height/2, s: 0.5+Math.random()});
 
-    document.getElementById('left').ontouchstart = () => moveLeft = true;
-    document.getElementById('left').ontouchend = () => moveLeft = false;
-    document.getElementById('right').ontouchstart = () => moveRight = true;
-    document.getElementById('right').ontouchend = () => moveRight = false;
+    // التحكم
+    document.getElementById('l').ontouchstart = (e) => { e.preventDefault(); moveLeft = true; };
+    document.getElementById('l').ontouchend = () => moveLeft = false;
+    document.getElementById('r').ontouchstart = (e) => { e.preventDefault(); moveRight = true; };
+    document.getElementById('r').ontouchend = () => moveRight = false;
 
-    function spawnItem() {
-        if (!playing) return;
-        const types = [
-            { char: '🌸', type: 'good', score: 10 },
-            { char: '🌼', type: 'good', score: 20 },
-            { char: '💣', type: 'bad', score: 0 }
-        ];
-        const item = types[Math.floor(Math.random() * types.length)];
-        items.push({ 
-            x: Math.random() * (canvas.width - 40), 
-            y: -50, 
-            char: item.char, 
-            type: item.type,
-            points: item.score,
-            speed: 3 + Math.random() * 3 
-        });
-        setTimeout(spawnItem, 1000);
+    function createItem() {
+        if(!gameActive) return;
+        const rand = Math.random();
+        let type = { char: '🌸', bad: false, pts: 10 }; // وردة عادية
+        if(rand > 0.8) type = { char: '💎', bad: false, pts: 50 }; // جوهرة نادرة
+        if(rand < 0.2) type = { char: '👾', bad: true, pts: 0 }; // وحش صغير (بدل قنبلة)
+
+        items.push({ x: Math.random()*(canvas.width-50), y: -50, s: 3 + (level*0.5), ...type });
+        setTimeout(createItem, 1000 - (level*50));
     }
 
-    function loop() {
-        if (!playing) return;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    function update() {
+        ctx.fillStyle = '#87CEEB'; ctx.fillRect(0,0,canvas.width, canvas.height); // السماء
+        
+        // رسم وتحريك السحاب
+        ctx.font = '60px Arial';
+        clouds.forEach(c => {
+            ctx.fillText('☁️', c.x, c.y);
+            c.x += c.s; if(c.x > canvas.width) c.x = -100;
+        });
 
         // تحريك اللاعب
-        if (moveLeft && player.x > 0) player.x -= player.speed;
-        if (moveRight && player.x < canvas.width - player.w) player.x += player.speed;
+        if(moveLeft && player.x > 0) player.x -= 8;
+        if(moveRight && player.x < canvas.width - player.w) player.x += 8;
+        
+        ctx.font = '65px Arial';
+        ctx.fillText('🐝', player.x, player.y); // النحلة
 
-        // رسم "النحلة" (اللاعب)
-        ctx.font = '50px Arial';
-        ctx.fillText('🐝', player.x, player.y);
+        items.forEach((it, i) => {
+            it.y += it.s;
+            ctx.font = '45px Arial';
+            ctx.fillText(it.char, it.x, it.y);
 
-        // تحريك ورسم الأشياء (الورد والقنابل)
-        items.forEach((item, index) => {
-            item.y += item.speed;
-            ctx.fillText(item.char, item.x, item.y);
-
-            // تصادم
-            if (item.y > player.y - 40 && item.y < player.y + 20 &&
-                item.x > player.x - 40 && item.x < player.x + 40) {
-                
-                if (item.type === 'good') {
-                    score += item.points;
-                    document.getElementById('score').innerText = score;
-                    items.splice(index, 1);
+            // تصادم (Logic)
+            if(it.y > player.y - 40 && it.y < player.y + 20 && Math.abs(it.x - player.x) < 50) {
+                if(it.bad) {
+                    gameActive = false;
+                    alert("يا بطل! الوحش لمسك 🙈\nنقاطك: " + score);
+                    location.reload();
                 } else {
-                    alert("أوه! انتبه من القنبلة! 🙀\nنقاطك: " + score);
-                    score = 0;
+                    score += it.pts;
                     document.getElementById('score').innerText = score;
-                    items.length = 0;
+                    if(score > level * 200) { level++; document.getElementById('level').innerText = level; }
+                    items.splice(i, 1);
                 }
             }
-
-            // مسح الأشياء اللي خرجات من الشاشة
-            if (item.y > canvas.height) items.splice(index, 1);
+            if(it.y > canvas.height) items.splice(i, 1);
         });
 
-        requestAnimationFrame(loop);
+        if(gameActive) requestAnimationFrame(update);
     }
 
-    spawnItem();
-    loop();
+    createItem();
+    update();
 </script>
 </body>
 </html>
