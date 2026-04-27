@@ -1,119 +1,120 @@
 <!DOCTYPE html>
-<html lang="ar">
+<html>
 <head>
-    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>مغامرة النحلة الخارقة</title>
+    <title>Super Bee Adventure - Mega Update</title>
     <style>
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #87CEEB; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { margin: 0; overflow: hidden; background: #87CEEB; font-family: 'Arial', sans-serif; }
         canvas { display: block; }
-        
-        /* واجهة المعلومات العلوي */
-        #top-bar { 
-            position: fixed; top: 10px; width: 100%; display: flex; justify-content: space-around;
-            font-size: 24px; font-weight: bold; color: #fff; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); pointer-events: none;
-        }
-        .stat-item { background: rgba(255, 255, 255, 0.2); padding: 5px 15px; border-radius: 20px; backdrop-filter: blur(5px); }
-
-        /* أزرار التحكم العملاقة */
-        .controls { position: fixed; bottom: 30px; width: 100%; display: flex; justify-content: space-between; padding: 0 30px; box-sizing: border-box; }
-        .btn { 
-            width: 90px; height: 90px; background: rgba(255, 255, 255, 0.4); 
-            border: 4px solid #fff; border-radius: 50%; font-size: 45px; 
-            display: flex; align-items: center; justify-content: center; 
-            box-shadow: 0 8px 15px rgba(0,0,0,0.1); touch-action: none;
-        }
-        .btn:active { transform: scale(0.9); background: #FFD700; }
+        #ui { position: fixed; top: 10px; width: 100%; display: flex; justify-content: space-around; color: white; font-size: 20px; font-weight: bold; text-shadow: 2px 2px #000; pointer-events: none; }
+        .controls { position: fixed; bottom: 20px; width: 100%; display: flex; justify-content: space-around; z-index: 10; }
+        .btn { width: 70px; height: 70px; background: rgba(255,255,255,0.4); border: 3px solid #fff; border-radius: 50%; font-size: 30px; display: flex; align-items: center; justify-content: center; touch-action: none; }
+        #shop-btn { position: fixed; top: 50px; right: 20px; background: #FFD700; border: 2px solid #fff; padding: 10px; border-radius: 10px; font-weight: bold; }
+        #shop-menu { display: none; position: fixed; inset: 50px 20px; background: rgba(0,0,0,0.9); border-radius: 20px; color: white; padding: 20px; z-index: 100; text-align: center; }
+        .shop-item { background: #333; margin: 10px; padding: 15px; border-radius: 10px; border: 2px solid #555; }
     </style>
 </head>
 <body>
+    <div id="ui">
+        <div>💰 <span id="coins">0</span></div>
+        <div>⭐ ليفل: <span id="lvl">1</span></div>
+    </div>
+    <div id="shop-btn" onclick="toggleShop()">🛒 المتجر</div>
 
-<div id="top-bar">
-    <div class="stat-item">🌸 <span id="score">0</span></div>
-    <div class="stat-item">⭐ المستوى: <span id="level">1</span></div>
-</div>
+    <div id="shop-menu">
+        <h2>🏪 متجر الأشكال</h2>
+        <div class="shop-item" onclick="buy('✈️', 100)">✈️ طائرة (100 قطعة)</div>
+        <div class="shop-item" onclick="buy('🛸', 500)">🛸 فضائي (500 قطعة)</div>
+        <div class="shop-item" onclick="buy('🐉', 1000)">🐉 تنين (1000 قطعة)</div>
+        <button onclick="toggleShop()" style="margin-top:20px; padding:10px 30px;">إغلاق</button>
+    </div>
 
-<div class="controls">
-    <div class="btn" id="l">⬅️</div>
-    <div class="btn" id="r">➡️</div>
-</div>
+    <div class="controls">
+        <div class="btn" id="l">⬅️</div>
+        <div class="btn" id="r">➡️</div>
+    </div>
+    <canvas id="c"></canvas>
 
-<canvas id="g"></canvas>
+    <script>
+        const canvas = document.getElementById('c'), ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
 
-<script>
-    const canvas = document.getElementById('g'), ctx = canvas.getContext('2d');
-    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+        let coins = 0, level = 1, skin = '🐝', px = canvas.width/2-30;
+        let items = [], bullets = [], ml = false, mr = false, shopOpen = false;
 
-    let score = 0, level = 1, gameActive = true;
-    let player = { x: canvas.width / 2 - 30, y: canvas.height - 130, w: 60 };
-    let items = [], clouds = [];
-    let moveLeft = false, moveRight = false;
+        function toggleShop() { 
+            shopOpen = !shopOpen; 
+            document.getElementById('shop-menu').style.display = shopOpen ? 'block' : 'none'; 
+        }
 
-    // توليد السحاب للخلفية
-    for(let i=0; i<5; i++) clouds.push({x: Math.random()*canvas.width, y: Math.random()*canvas.height/2, s: 0.5+Math.random()});
+        function buy(newSkin, price) {
+            if(coins >= price) {
+                coins -= price; skin = newSkin;
+                document.getElementById('coins').innerText = coins;
+                alert("مبروك! شريتي شكل جديد " + newSkin);
+                toggleShop();
+            } else { alert("مازال خاصك الفلوس! جمع كثر 💰"); }
+        }
 
-    // التحكم
-    document.getElementById('l').ontouchstart = (e) => { e.preventDefault(); moveLeft = true; };
-    document.getElementById('l').ontouchend = () => moveLeft = false;
-    document.getElementById('r').ontouchstart = (e) => { e.preventDefault(); moveRight = true; };
-    document.getElementById('r').ontouchend = () => moveRight = false;
+        document.getElementById('l').ontouchstart = (e) => { e.preventDefault(); ml = true; };
+        document.getElementById('l').ontouchend = () => ml = false;
+        document.getElementById('r').ontouchstart = (e) => { e.preventDefault(); mr = true; };
+        document.getElementById('r').ontouchend = () => mr = false;
 
-    function createItem() {
-        if(!gameActive) return;
-        const rand = Math.random();
-        let type = { char: '🌸', bad: false, pts: 10 }; // وردة عادية
-        if(rand > 0.8) type = { char: '💎', bad: false, pts: 50 }; // جوهرة نادرة
-        if(rand < 0.2) type = { char: '👾', bad: true, pts: 0 }; // وحش صغير (بدل قنبلة)
+        function loop() {
+            if(shopOpen) return requestAnimationFrame(loop);
+            ctx.fillStyle = '#87CEEB'; ctx.fillRect(0,0,canvas.width, canvas.height);
+            
+            if(ml && px > 0) px -= 7; if(mr && px < canvas.width - 60) px += 7;
+            ctx.font = '50px Arial';
+            ctx.fillText(skin, px, canvas.height - 120);
 
-        items.push({ x: Math.random()*(canvas.width-50), y: -50, s: 3 + (level*0.5), ...type });
-        setTimeout(createItem, 1000 - (level*50));
-    }
+            // تحريك الأشياء (الورد والوحوش)
+            items.forEach((it, i) => {
+                it.y += it.s; ctx.fillText(it.char, it.x, it.y);
+                
+                // الوحش يرمي النار
+                if(it.bad && Math.random() > 0.98) {
+                    bullets.push({x: it.x+10, y: it.y+20, s: 5});
+                }
 
-    function update() {
-        ctx.fillStyle = '#87CEEB'; ctx.fillRect(0,0,canvas.width, canvas.height); // السماء
-        
-        // رسم وتحريك السحاب
-        ctx.font = '60px Arial';
-        clouds.forEach(c => {
-            ctx.fillText('☁️', c.x, c.y);
-            c.x += c.s; if(c.x > canvas.width) c.x = -100;
-        });
-
-        // تحريك اللاعب
-        if(moveLeft && player.x > 0) player.x -= 8;
-        if(moveRight && player.x < canvas.width - player.w) player.x += 8;
-        
-        ctx.font = '65px Arial';
-        ctx.fillText('🐝', player.x, player.y); // النحلة
-
-        items.forEach((it, i) => {
-            it.y += it.s;
-            ctx.font = '45px Arial';
-            ctx.fillText(it.char, it.x, it.y);
-
-            // تصادم (Logic)
-            if(it.y > player.y - 40 && it.y < player.y + 20 && Math.abs(it.x - player.x) < 50) {
-                if(it.bad) {
-                    gameActive = false;
-                    alert("يا بطل! الوحش لمسك 🙈\nنقاطك: " + score);
-                    location.reload();
-                } else {
-                    score += it.pts;
-                    document.getElementById('score').innerText = score;
-                    if(score > level * 200) { level++; document.getElementById('level').innerText = level; }
+                if(it.y > canvas.height - 150 && it.y < canvas.height - 70 && Math.abs(it.x - px) < 50) {
+                    if(it.bad) { gameOver(); }
+                    else { coins += it.p; if(coins > level*200) level++; }
+                    document.getElementById('coins').innerText = coins;
+                    document.getElementById('lvl').innerText = level;
                     items.splice(i, 1);
                 }
-            }
-            if(it.y > canvas.height) items.splice(i, 1);
-        });
+                if(it.y > canvas.height) items.splice(i, 1);
+            });
 
-        if(gameActive) requestAnimationFrame(update);
-    }
+            // تحريك رصاص الوحوش (النار)
+            bullets.forEach((b, bi) => {
+                b.y += b.s; ctx.fillText('🔥', b.x, b.y);
+                if(b.y > canvas.height - 150 && b.y < canvas.height - 70 && Math.abs(b.x - px) < 40) { gameOver(); }
+                if(b.y > canvas.height) bullets.splice(bi, 1);
+            });
 
-    createItem();
-    update();
-</script>
+            requestAnimationFrame(loop);
+        }
+
+        function gameOver() {
+            alert("أوه! خسرتي 😱\n جمعتي: " + coins + " قطعة");
+            items = []; bullets = []; level = 1; px = canvas.width/2-30;
+        }
+
+        setInterval(() => {
+            if(shopOpen) return;
+            let r = Math.random();
+            let type = r > 0.8 ? {char:'🌸', p:20, bad:false} : (r < 0.3 ? {char:'👾', p:0, bad:true} : {char:'🌼', p:10, bad:false});
+            items.push({x: Math.random()*(canvas.width-50), y: -50, s: 3+level, ...type});
+        }, 1000);
+
+        loop();
+    </script>
 </body>
 </html>
+
+
 
 
