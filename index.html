@@ -1,77 +1,97 @@
-
 <!DOCTYPE html>
-<html>
+<html lang="ar">
 <head>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CS:GO Strike Mobile</title>
+    <title>CS:GO Mobile V10</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #000; font-family: sans-serif; }
-        #game-container { position: relative; width: 100vw; height: 100vh; background: url('https://img.freepik.com/free-photo/war-zone-background-with-ruined-buildings_23-2149425404.jpg') center/cover; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #0b0e11; }
+        canvas { display: block; width: 100vw; height: 100vh; }
         
-        /* CS:GO Crosshair */
-        #crosshair { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 30px; height: 30px; border: none; pointer-events: none; }
-        #crosshair::before { content: ''; position: absolute; left: 14px; width: 2px; height: 30px; background: #0f0; box-shadow: 0 0 5px #0f0; }
-        #crosshair::after { content: ''; position: absolute; top: 14px; width: 30px; height: 2px; background: #0f0; box-shadow: 0 0 5px #0f0; }
+        /* نيشان احترافي صغير */
+        #cross { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 20px; height: 20px; pointer-events: none; }
+        #cross::before { content: ''; position: absolute; left: 9px; width: 2px; height: 20px; background: #0f0; box-shadow: 0 0 5px #0f0; }
+        #cross::after { content: ''; position: absolute; top: 9px; width: 20px; height: 2px; background: #0f0; box-shadow: 0 0 5px #0f0; }
 
-        /* HUD الاحترافي */
-        .hud { position: absolute; bottom: 20px; width: 100%; display: flex; justify-content: space-between; padding: 0 30px; box-sizing: border-box; pointer-events: none; }
-        .stat { background: rgba(0,0,0,0.8); color: #f1c40f; padding: 10px 20px; border-radius: 4px; border-bottom: 3px solid #f1c40f; font-weight: bold; font-size: 20px; }
-
-        /* السلاح M4A1 */
-        #weapon { position: absolute; bottom: -20px; right: 5%; width: 350px; pointer-events: none; z-index: 10; transition: transform 0.05s; }
+        /* HUD نقي */
+        .hud { position: fixed; bottom: 15px; left: 15px; color: #f1c40f; font-family: monospace; font-size: 18px; text-shadow: 1px 1px #000; pointer-events: none; }
+        
+        /* سلاح مرسوم بالكود (باش ميتلفش) */
+        #gun-layer { position: fixed; bottom: 0; right: 10%; width: 300px; height: 200px; pointer-events: none; transition: 0.05s; }
 
         /* التحكم */
-        .btn { position: absolute; pointer-events: auto; background: rgba(255,255,255,0.1); border: 2px solid #f1c40f; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
-        #fire-btn { bottom: 40px; right: 40px; width: 100px; height: 100px; color: #fff; font-weight: bold; }
-        #joy-base { bottom: 40px; left: 40px; width: 130px; height: 130px; border: 1px solid #444; }
-        #joy-stick { position: absolute; width: 60px; height: 60px; background: #555; border-radius: 50%; left: 35px; top: 35px; }
+        #shoot { position: fixed; bottom: 40px; right: 40px; width: 90px; height: 90px; border: 3px solid #f1c40f; border-radius: 50%; background: rgba(0,0,0,0.4); color: #fff; font-weight: bold; }
+        #joy { position: fixed; bottom: 40px; left: 40px; width: 120px; height: 120px; background: rgba(255,255,255,0.05); border: 1px solid #444; border-radius: 50%; }
+        #stick { position: absolute; top: 35px; left: 35px; width: 50px; height: 50px; background: #555; border-radius: 50%; }
     </style>
 </head>
 <body>
 
-<div id="game-container">
-    <div id="crosshair"></div>
-    <div class="hud">
-        <div class="stat">HP: 100</div>
-        <div class="stat">💰 $<span id="cash">0</span></div>
-    </div>
-    
-    <img id="weapon" src="https://www.freeiconspng.com/uploads/csgo-m4a1-s-png-3.png">
+<canvas id="g"></canvas>
+<div id="cross"></div>
+<div class="hud">✚ 100 | 💰 $<span id="m">0</span></div>
 
-    <div id="joy-base" class="btn"><div id="joy-stick"></div></div>
-    <button id="fire-btn" class="btn">SHOOT</button>
-    <div id="zombie-layer"></div>
-</div>
+<svg id="gun-layer" viewBox="0 0 200 200">
+    <rect x="100" y="100" width="80" height="25" fill="#2c3e50" rx="3"/>
+    <rect x="50" y="105" width="60" height="15" fill="#1a1a1a" />
+    <rect x="110" y="125" width="15" height="40" fill="#1a1a1a" transform="rotate(15 110 125)"/>
+    <rect x="160" y="95" width="30" height="10" fill="#34495e" />
+</svg>
+
+<div id="joy"><div id="stick"></div></div>
+<button id="shoot">FIRE</button>
 
 <script>
-    let cash = 0;
-    const weapon = document.getElementById('weapon');
-    const fireBtn = document.getElementById('fire-btn');
+    const c = document.getElementById('g'), ctx = c.getContext('2d');
+    c.width = window.innerWidth; c.height = window.innerHeight;
+    let money = 0; let enemies = [];
+    let mx = 0, my = 0;
 
-    // تأثير الضرب
-    fireBtn.addEventListener('touchstart', (e) => {
+    // تحكم الجويستيك
+    document.getElementById('joy').ontouchmove = (e) => {
+        const t = e.touches[0], r = e.currentTarget.getBoundingClientRect();
+        const dx = t.clientX - (r.left + 60), dy = t.clientY - (r.top + 60);
+        const dist = Math.min(Math.hypot(dx, dy), 40), ang = Math.atan2(dy, dx);
+        mx = (Math.cos(ang) * dist) / 40; my = (Math.sin(ang) * dist) / 40;
+        document.getElementById('stick').style.transform = `translate(${Math.cos(ang)*dist}px, ${Math.sin(ang)*dist}px)`;
+    };
+    document.getElementById('joy').ontouchend = () => { mx=0; my=0; document.getElementById('stick').style.transform = 'none'; };
+
+    // الضرب
+    document.getElementById('shoot').ontouchstart = (e) => {
         e.preventDefault();
-        cash += 50;
-        document.getElementById('cash').innerText = cash;
-        weapon.style.transform = 'translateY(20px) rotate(-5deg) scale(1.1)';
-        setTimeout(() => weapon.style.transform = 'translateY(0) rotate(0) scale(1)', 50);
-        spawnZombie();
-    });
+        money += 50; document.getElementById('m').innerText = money;
+        document.getElementById('gun-layer').style.transform = 'translateY(15px) rotate(-3deg)';
+        setTimeout(() => document.getElementById('gun-layer').style.transform = 'none', 50);
+        enemies.forEach((e, i) => {
+            if(Math.hypot(e.x - c.width/2, e.y - c.height/2) < (15 + e.z*100)) enemies.splice(i,1);
+        });
+    };
 
-    function spawnZombie() {
-        const z = document.createElement('img');
-        z.src = 'https://i.imgur.com/vHIn8mS.png'; // صورة زومبي حقيقية (PNG)
-        z.style.position = 'absolute';
-        z.style.width = '150px';
-        z.style.left = Math.random() * (window.innerWidth - 150) + 'px';
-        z.style.top = '20%';
-        z.style.transition = 'top 3s linear';
-        document.getElementById('zombie-layer').appendChild(z);
+    function loop() {
+        ctx.fillStyle = '#0b0e11'; ctx.fillRect(0,0,c.width, c.height);
         
-        setTimeout(() => z.style.top = '100%', 100);
-        setTimeout(() => z.remove(), 3100);
+        // رسم "الخريطة" (Floor)
+        ctx.strokeStyle = '#1a2a3a';
+        for(let i=-1000; i<2000; i+=100) {
+            ctx.beginPath(); ctx.moveTo(i + (mx*-200), c.height); ctx.lineTo(c.width/2, c.height/2); ctx.stroke();
+        }
+
+        enemies.forEach((e, i) => {
+            e.z += 0.005; e.y += (e.z * 10);
+            let size = 10 + (e.z * 120);
+            let x = c.width/2 + (e.x - c.width/2) * (e.z * 2) + (mx*-100);
+            
+            ctx.fillStyle = '#c0392b'; ctx.beginPath(); ctx.arc(x, e.y, size, 0, 7); ctx.fill();
+            if(e.y > c.height) enemies.splice(i,1);
+        });
+        requestAnimationFrame(loop);
     }
+
+    setInterval(() => enemies.push({x: Math.random()*c.width, y: c.height/2, z: 0.1}), 1500);
+    loop();
 </script>
 </body>
 </html>
+
 
