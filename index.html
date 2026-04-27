@@ -3,29 +3,41 @@
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Survival Dice World Tour 🎲</title>
+    <title>Survival Mega Mix 🌍🎲🛒</title>
     <style>
         body { margin: 0; overflow: hidden; background: #000; font-family: sans-serif; touch-action: none; }
         canvas { display: block; }
-        #ui { position: fixed; top: 10px; width: 100%; display: flex; justify-content: space-around; color: white; font-size: 14px; font-weight: bold; text-shadow: 2px 2px #000; pointer-events: none; }
-        .val { color: #00d4ff; }
-        .controls { position: fixed; bottom: 20px; width: 100%; display: flex; justify-content: space-around; }
-        .btn { width: 75px; height: 75px; background: rgba(255,255,255,0.2); border: 3px solid #fff; border-radius: 50%; font-size: 35px; display: flex; align-items: center; justify-content: center; }
+        #ui { position: fixed; top: 10px; width: 100%; display: flex; justify-content: space-around; color: white; font-size: 14px; font-weight: bold; text-shadow: 2px 2px #000; z-index: 10; }
+        .controls { position: fixed; bottom: 20px; width: 100%; display: flex; justify-content: space-around; z-index: 10; }
+        .btn { width: 70px; height: 70px; background: rgba(255,255,255,0.2); border: 3px solid #fff; border-radius: 50%; font-size: 30px; display: flex; align-items: center; justify-content: center; }
         #fire-btn { background: rgba(255, 0, 0, 0.4); border-color: #ff0000; }
-        #power-up-txt { position: fixed; top: 70px; width: 100%; text-align: center; color: #0f0; font-weight: bold; font-size: 20px; display: none; text-shadow: 2px 2px #000; }
-        #reload-box { position: fixed; bottom: 110px; left: 50%; transform: translateX(-50%); width: 60%; height: 10px; background: #333; border: 1px solid #fff; display: none; }
+        #shop-btn { position: fixed; top: 40px; right: 10px; background: #FFD700; padding: 5px 10px; border-radius: 5px; font-weight: bold; z-index: 20; }
+        #shop-menu { display: none; position: fixed; inset: 50px 20px; background: rgba(0,0,0,0.9); border-radius: 20px; color: white; padding: 20px; z-index: 100; text-align: center; }
+        #reload-bar { position: fixed; bottom: 110px; left: 50%; transform: translateX(-50%); width: 200px; height: 8px; background: #333; border: 1px solid #fff; display: none; }
         #reload-fill { width: 0%; height: 100%; background: #00d4ff; }
+        #power-txt { position: fixed; top: 70px; width: 100%; text-align: center; color: #0f0; font-weight: bold; display: none; }
     </style>
 </head>
 <body>
 
 <div id="ui">
-    <div>⏱️ نجاة: <span class="val" id="score">0</span>s</div>
-    <div>💰: <span class="val" id="coins">0</span></div>
-    <div>❤️: <span class="val" id="hp">100</span>%</div>
+    <div>⏱️: <span id="timer">0</span>s</div>
+    <div>💰: <span id="coins">0</span></div>
+    <div>❤️: <span id="hp">100</span>%</div>
 </div>
-<div id="power-up-txt"></div>
-<div id="reload-box"><div id="reload-fill"></div></div>
+<div id="shop-btn" onclick="toggleShop()">🛒 المتجر</div>
+<div id="power-txt"></div>
+
+<div id="shop-menu">
+    <h2>🏪 المتجر</h2>
+    <p>كوينز: <span id="shop-coins">0</span></p>
+    <button onclick="buy('🚀', 0)">🚀 افتراضي</button><br><br>
+    <button onclick="buy('🛸', 50)">🛸 فضائي (50💰)</button><br><br>
+    <button onclick="buy('🐉', 100)">🐉 تنين (100💰)</button><br><br>
+    <button onclick="toggleShop()">إغلاق</button>
+</div>
+
+<div id="reload-bar"><div id="reload-fill"></div></div>
 
 <div class="controls">
     <div style="display:flex; gap:10px;">
@@ -42,12 +54,19 @@
     canvas.width = window.innerWidth; canvas.height = window.innerHeight;
 
     let score = 0, coins = 0, hp = 100, ammo = 10, reloading = false;
-    let px = canvas.width/2-30, items = [], enemies = [], bullets = [], dices = [];
-    let ml = false, mr = false;
-    let powerUp = { active: false, type: '', timeLeft: 0 };
-    let playerSpeed = 8;
+    let px = canvas.width/2-30, skin = '🚀', playerSpeed = 8;
+    let items = [], enemies = [], dices = [], ml = false, mr = false, shopOpen = false;
+    let powerActive = false, powerType = '';
 
-    setInterval(() => { if(hp > 0) { score++; document.getElementById('score').innerText = score; } }, 1000);
+    const bgs = [
+        {n: 'باريس 🗼', c: '#87CEEB'}, {n: 'دبي 🏙️', c: '#ff8c00'}, {n: 'طوكيو ⛩️', c: '#4b0082'}, {n: 'مصر 🏜️', c: '#daa520'}
+    ];
+    let bgIdx = 0;
+
+    setInterval(() => { if(hp > 0 && !shopOpen) { score++; document.getElementById('timer').innerText = score; } }, 1000);
+
+    function toggleShop() { shopOpen = !shopOpen; document.getElementById('shop-menu').style.display = shopOpen?'block':'none'; document.getElementById('shop-coins').innerText = coins; }
+    function buy(s, p) { if(coins >= p) { skin = s; coins -= p; document.getElementById('coins').innerText = coins; toggleShop(); } else alert("ما عندكش كوينز كافية!"); }
 
     document.getElementById('l').ontouchstart = (e) => { e.preventDefault(); ml = true; };
     document.getElementById('l').ontouchend = () => ml = false;
@@ -57,108 +76,61 @@
     document.getElementById('fire-btn').ontouchstart = (e) => {
         e.preventDefault();
         if(ammo > 0 && !reloading) {
-            fireShot();
-            if(powerUp.active && powerUp.type === 'double') { 
-                setTimeout(fireShot, 100); // طلقة ثانية
-            }
+            enemies.forEach(en => { if(Math.abs(en.x - px) < 150) { en.y -= 150; if(Math.random()>0.7) dices.push({x: en.x, y: en.y}); } });
             ammo--; if(ammo === 0) startReload();
         }
     };
 
-    function fireShot() {
-        enemies.forEach((en, i) => {
-            if(Math.abs(en.x - px) < 120) {
-                en.y -= 150; // دفع
-                if(Math.random() > 0.7) { // احتمال سقوط نرد عند الإصابة
-                    dices.push({x: en.x, y: en.y, s: 4});
-                }
-            }
-        });
-    }
-
-    function activatePowerUp() {
-        const types = [
-            {id: 'shield', name: '🛡️ درع حماية!', color: '#fff'},
-            {id: 'double', name: '🚀🚀 إطلاق مزدوج!', color: '#ff0'},
-            {id: 'speed', name: '⚡ سرعة فائقة!', color: '#0ff'},
-            {id: 'health', name: '❤️ حياة إضافية!', color: '#f0f'}
-        ];
-        const p = types[Math.floor(Math.random() * types.length)];
-        powerUp = { active: true, type: p.id, timeLeft: 10 };
-        
-        if(p.id === 'speed') playerSpeed = 15;
-        if(p.id === 'health') { hp = Math.min(100, hp + 20); document.getElementById('hp').innerText = hp; }
-
-        const txt = document.getElementById('power-up-txt');
-        txt.innerText = p.name; txt.style.color = p.color; txt.style.display = 'block';
-
-        let timer = setInterval(() => {
-            powerUp.timeLeft--;
-            if(powerUp.timeLeft <= 0) {
-                clearInterval(timer);
-                powerUp.active = false;
-                playerSpeed = 8;
-                txt.style.display = 'none';
-            }
-        }, 1000);
-    }
-
     function startReload() {
-        reloading = true; document.getElementById('reload-box').style.display = 'block';
+        reloading = true; document.getElementById('reload-bar').style.display = 'block';
         let w = 0;
-        let inv = setInterval(() => {
-            w += 0.16; document.getElementById('reload-fill').style.width = w + '%';
-            if(w >= 100) { clearInterval(inv); ammo = 10; reloading = false; document.getElementById('reload-box').style.display = 'none'; }
-        }, 100);
+        let inv = setInterval(() => { w += 0.16; document.getElementById('reload-fill').style.width = w + '%'; if(w >= 100) { clearInterval(inv); ammo = 10; reloading = false; document.getElementById('reload-box').style.display = 'none'; } }, 100);
+    }
+
+    function activatePower() {
+        const types = ['🛡️ درع', '⚡ سرعة', '❤️ صحة'];
+        powerType = types[Math.floor(Math.random()*types.length)];
+        powerActive = true;
+        const txt = document.getElementById('power-txt');
+        txt.innerText = "ميزة: " + powerType; txt.style.display = 'block';
+        if(powerType === '⚡ سرعة') playerSpeed = 15;
+        if(powerType === '❤️ صحة') { hp = Math.min(100, hp+20); document.getElementById('hp').innerText = hp; }
+        setTimeout(() => { powerActive = false; playerSpeed = 8; txt.style.display = 'none'; }, 10000);
     }
 
     function loop() {
-        if(hp <= 0) return;
-        ctx.fillStyle = '#0a0a2a'; ctx.fillRect(0,0,canvas.width, canvas.height);
+        if(hp <= 0 || shopOpen) return requestAnimationFrame(loop);
+        ctx.fillStyle = bgs[bgIdx].c; ctx.fillRect(0,0,canvas.width, canvas.height);
         
         if(ml && px > 0) px -= playerSpeed; if(mr && px < canvas.width - 60) px += playerSpeed;
+
+        if(powerActive && powerType === '🛡️ درع') { ctx.beginPath(); ctx.arc(px+30, canvas.height-85, 50, 0, Math.PI*2); ctx.strokeStyle = '#fff'; ctx.stroke(); }
         
-        // رسم الدرع
-        if(powerUp.active && powerUp.type === 'shield') {
-            ctx.beginPath(); ctx.arc(px+30, canvas.height-85, 50, 0, Math.PI*2);
-            ctx.strokeStyle = '#0ff'; ctx.lineWidth = 3; ctx.stroke();
-        }
+        ctx.font = '50px Arial'; ctx.fillText(skin, px, canvas.height - 100);
 
-        ctx.font = '55px Arial'; ctx.fillText('🚀', px, canvas.height - 80);
-
-        // النرد (Lucky Dice)
-        dices.forEach((d, i) => {
-            d.y += d.s; ctx.fillText('🎲', d.x, d.y);
-            if(Math.abs(d.x - px) < 50 && Math.abs(d.y - (canvas.height-100)) < 50) {
-                activatePowerUp(); dices.splice(i, 1);
-            }
-        });
+        dices.forEach((d, i) => { d.y += 4; ctx.fillText('🎲', d.x, d.y); if(Math.abs(d.x - px) < 50 && Math.abs(d.y - (canvas.height-100)) < 50) { activatePower(); dices.splice(i,1); } });
 
         enemies.forEach((en, i) => {
             en.y += en.s; ctx.fillText(en.char, en.x, en.y);
-            if(en.y > canvas.height - 120 && en.y < canvas.height - 60 && Math.abs(en.x - px) < 50) {
-                if(!(powerUp.active && powerUp.type === 'shield')) hp -= 20;
+            if(en.y > canvas.height - 130 && en.y < canvas.height - 70 && Math.abs(en.x - px) < 50) {
+                if(!(powerActive && powerType === '🛡️ درع')) hp -= 20;
                 enemies.splice(i,1); document.getElementById('hp').innerText = hp;
                 if(hp <= 0) { alert("خسرتي! السكور: " + score); location.reload(); }
             }
+            if(en.y > canvas.height) enemies.splice(i,1);
         });
 
         items.forEach((it, i) => {
             it.y += 4; ctx.fillText('🌸', it.x, it.y);
             if(Math.abs(it.x - px) < 50 && Math.abs(it.y - (canvas.height-100)) < 50) {
                 coins += 1; document.getElementById('coins').innerText = coins; items.splice(i,1);
+                if(coins % 10 === 0 && bgIdx < bgs.length-1) bgIdx++;
             }
         });
-
         requestAnimationFrame(loop);
     }
 
-    setInterval(() => {
-        let r = Math.random();
-        if(r > 0.4) enemies.push({x: Math.random()*(canvas.width-50), y: -50, s: 3+Math.random()*3, char: Math.random()>0.5?'👽':'🤖'});
-        else items.push({x: Math.random()*(canvas.width-50), y: -50});
-    }, 900);
-
+    setInterval(() => { if(!shopOpen) { let r = Math.random(); if(r > 0.4) enemies.push({x: Math.random()*(canvas.width-50), y: -50, s: 3+Math.random()*3, char: r>0.7?'👽':'🤖'}); else items.push({x: Math.random()*(canvas.width-50), y: -50}); } }, 900);
     loop();
 </script>
 </body>
