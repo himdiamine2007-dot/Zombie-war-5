@@ -1,144 +1,116 @@
+
 <!DOCTYPE html>
 <html lang="ar">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Z-Survival: Mobile HUD</title>
+    <title>Z-War Mobile: Evolution</title>
     <style>
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; font-family: 'Arial', sans-serif; }
-        canvas { display: block; width: 100vw; height: 100vh; background: #111; }
-
-        /* HUD المعلومات العلوية */
-        .top-bar { position: fixed; top: 10px; width: 100%; display: flex; justify-content: space-between; padding: 0 20px; box-sizing: border-box; pointer-events: none; z-index: 100; }
-        .stat-box { background: rgba(0,0,0,0.6); color: #fff; padding: 5px 15px; border-radius: 20px; border: 1px solid #f1c40f; font-size: 12px; }
-
-        /* 📱 أزرار التحكم بستايل فري فاير */
-        .controls { position: fixed; inset: 0; pointer-events: none; z-index: 50; }
-        .btn { position: absolute; background: rgba(255,255,255,0.15); border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; pointer-events: auto; touch-action: none; backdrop-filter: blur(5px); }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; }
+        canvas { display: block; background: radial-gradient(circle, #2c3e50, #000); width: 100vw; height: 100vh; }
+        
+        /* HUD - واجهة فري فاير */
+        .controls { position: fixed; inset: 0; pointer-events: none; z-index: 100; font-family: sans-serif; }
+        .btn { position: absolute; background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; pointer-events: auto; touch-action: none; backdrop-filter: blur(4px); }
         .btn:active { background: rgba(241, 196, 15, 0.4); transform: scale(0.9); }
 
-        /* الجويستيك (يسار) */
-        .joystick-area { position: absolute; bottom: 40px; left: 40px; width: 150px; height: 150px; background: rgba(255,255,255,0.05); border-radius: 50%; border: 1px dashed rgba(255,255,255,0.2); }
-        .stick { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 60px; height: 60px; background: rgba(255,255,255,0.2); border-radius: 50%; border: 2px solid #fff; }
+        /* الجويستيك الاحترافي */
+        .joystick-base { position: absolute; bottom: 40px; left: 40px; width: 120px; height: 120px; background: rgba(255,255,255,0.05); border-radius: 50%; border: 1px solid rgba(255,255,255,0.2); pointer-events: auto; }
+        .joystick-stick { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 50px; height: 50px; background: rgba(255,255,255,0.3); border-radius: 50%; border: 2px solid #fff; }
 
-        /* أزرار الأفعال (يمين) */
-        #fire-btn { bottom: 60px; right: 50px; width: 90px; height: 90px; background: rgba(231, 76, 60, 0.3); border-color: #e74c3c; font-weight: bold; font-size: 18px; }
-        #jump-btn { bottom: 160px; right: 60px; width: 55px; height: 55px; font-size: 20px; }
-        #crouch-btn { bottom: 60px; right: 160px; width: 55px; height: 55px; font-size: 20px; }
-        #run-btn { top: 120px; left: 40px; width: 50px; height: 50px; background: rgba(46, 204, 113, 0.2); border-color: #2ecc71; font-size: 18px; }
+        /* أزرار الأفعال */
+        #fire { bottom: 50px; right: 40px; width: 90px; height: 90px; background: rgba(231, 76, 60, 0.3); border: 3px solid #e74c3c; font-size: 24px; }
+        #jump { bottom: 150px; right: 50px; width: 55px; height: 55px; }
+        #crouch { bottom: 50px; right: 150px; width: 55px; height: 55px; }
+        #run { top: 20px; left: 20px; width: 50px; height: 50px; background: rgba(46, 204, 113, 0.3); border-color: #2ecc71; }
 
         /* شاشة البداية */
-        .overlay { position: fixed; inset: 0; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 200; color: #f1c40f; }
-        input { padding: 12px; border-radius: 25px; border: 2px solid #f1c40f; background: #222; color: #fff; width: 250px; text-align: center; margin: 20px 0; outline: none; }
-        .start-btn { padding: 12px 60px; background: #f1c40f; color: #000; border: none; border-radius: 25px; font-weight: bold; font-size: 20px; cursor: pointer; }
+        .start-screen { position: fixed; inset: 0; background: #000; z-index: 200; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #f1c40f; }
+        .start-btn { padding: 15px 60px; background: #f1c40f; border: none; border-radius: 30px; font-weight: bold; font-size: 20px; margin-top: 20px; }
     </style>
 </head>
 <body>
 
-<div id="lobby" class="overlay">
-    <h1 style="letter-spacing: 5px;">Z-WAR MOBILE</h1>
-    <input type="text" id="p-input" placeholder="اسم المستخدم...">
-    <button class="start-btn" onclick="initGame()">دخول المعركة</button>
-</div>
-
-<div class="top-bar">
-    <div class="stat-box">👤 <span id="h-name">...</span></div>
-    <div class="stat-box">💰 <span id="h-cash">0</span></div>
+<div id="lobby" class="start-screen">
+    <h1>BATTLEGROUND Z</h1>
+    <p>VERSION 2.0 - MODIFIED HUD</p>
+    <button class="start-btn" onclick="start()">START MISSION</button>
 </div>
 
 <div class="controls">
-    <div class="btn" id="run-btn">🏃</div>
-
-    <div class="joystick-area">
-        <div class="stick" id="stick"></div>
-    </div>
-
-    <div class="btn" id="fire-btn">🔥</div>
-    <div class="btn" id="jump-btn">🚀</div>
-    <div class="btn" id="crouch-btn">⬇️</div>
+    <div class="btn" id="run">🏃</div>
+    <div class="joystick-base" id="joyBase"><div class="joystick-stick" id="joyStick"></div></div>
+    <div class="btn" id="fire">🔥</div>
+    <div class="btn" id="jump">🚀</div>
+    <div class="btn" id="crouch">⬇️</div>
 </div>
 
-<canvas id="gameCanvas"></canvas>
+<canvas id="game"></canvas>
 
 <script>
-    const canvas = document.getElementById('gameCanvas');
+    const canvas = document.getElementById('game');
     const ctx = canvas.getContext('2d');
     canvas.width = window.innerWidth; canvas.height = window.innerHeight;
 
-    let isPlaying = false;
-    const player = { x: canvas.width/2, y: canvas.height/2, r: 22, speed: 4, color: '#f1c40f', targetX: canvas.width/2, targetY: canvas.height/2 };
+    let playing = false;
+    const player = { x: canvas.width/2, y: canvas.height/2, r: 20, speed: 5 };
     const enemies = []; const bullets = [];
 
-    // نظام الجويستيك البسيط
-    const stick = document.getElementById('stick');
+    // تحكم الجويستيك
     let moveX = 0, moveY = 0;
+    const joyBase = document.getElementById('joyBase');
+    const joyStick = document.getElementById('joyStick');
 
-    window.addEventListener('touchstart', e => {
+    joyBase.addEventListener('touchmove', e => {
         const touch = e.touches[0];
-        if (touch.clientX < 200 && touch.clientY > canvas.height - 200) {
-            // محاكاة حركة الجويستيك هنا
-        }
+        const rect = joyBase.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        moveX = (touch.clientX - centerX) / 60;
+        moveY = (touch.clientY - centerY) / 60;
+        
+        // بقاء العصا داخل الدائرة
+        const dist = Math.hypot(touch.clientX - centerX, touch.clientY - centerY);
+        const angle = Math.atan2(touch.clientY - centerY, touch.clientX - centerX);
+        const limitedDist = Math.min(dist, 40);
+        joyStick.style.left = `calc(50% + ${Math.cos(angle) * limitedDist}px)`;
+        joyStick.style.top = `calc(50% + ${Math.sin(angle) * limitedDist}px)`;
     });
 
-    // أزرار الأوامر
-    document.getElementById('fire-btn').ontouchstart = (e) => { e.preventDefault(); shoot(); };
-    document.getElementById('run-btn').ontouchstart = (e) => { e.preventDefault(); player.speed = 8; };
-    document.getElementById('run-btn').ontouchend = () => { player.speed = 4; };
+    joyBase.addEventListener('touchend', () => {
+        moveX = 0; moveY = 0;
+        joyStick.style.left = '50%'; joyStick.style.top = '50%';
+    });
 
-    function shoot() {
-        bullets.push({ x: player.x, y: player.y, v: 15 });
-    }
+    document.getElementById('fire').ontouchstart = (e) => { e.preventDefault(); bullets.push({x: player.x, y: player.y}); };
 
-    function initGame() {
-        const name = document.getElementById('p-input').value || "أمين";
-        document.getElementById('h-name').innerText = name;
-        document.getElementById('lobby').style.display = 'none';
-        isPlaying = true;
-        spawnEnemy();
-        draw();
-    }
+    function start() { document.getElementById('lobby').style.display='none'; playing=true; spawn(); loop(); }
 
-    function spawnEnemy() {
-        if(!isPlaying) return;
-        enemies.push({ x: Math.random()*canvas.width, y: -50, r: 20, hp: 3 });
-        setTimeout(spawnEnemy, 2000);
-    }
+    function spawn() { if(playing) { enemies.push({x: Math.random()*canvas.width, y: -20, r: 20}); setTimeout(spawn, 2000); } }
 
-    function draw() {
-        if(!isPlaying) return;
-        ctx.fillStyle = "rgba(17, 17, 17, 0.4)"; // تأثير الـ Trail
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+    function loop() {
+        if(!playing) return;
+        ctx.fillStyle = "rgba(0,0,0,0.2)"; ctx.fillRect(0,0,canvas.width, canvas.height);
 
-        // تحريك اللاعب (محاكاة انسيابية)
+        player.x += moveX * player.speed; player.y += moveY * player.speed;
+
         ctx.beginPath(); ctx.arc(player.x, player.y, player.r, 0, Math.PI*2);
-        ctx.fillStyle = player.color; ctx.fill();
-        ctx.strokeStyle = "#fff"; ctx.lineWidth = 3; ctx.stroke();
+        ctx.fillStyle = "#f1c40f"; ctx.fill(); ctx.strokeStyle = "#fff"; ctx.stroke();
 
         bullets.forEach((b, i) => {
-            b.y -= b.v;
-            ctx.fillStyle = "#ff4444";
-            ctx.fillRect(b.x-2, b.y, 4, 15);
-            if(b.y < 0) bullets.splice(i, 1);
+            b.y -= 10; ctx.fillStyle = "red"; ctx.fillRect(b.x-2, b.y, 4, 15);
         });
 
         enemies.forEach((e, i) => {
-            e.y += 2;
-            ctx.beginPath(); ctx.arc(e.x, e.y, e.r, 0, Math.PI*2);
-            ctx.fillStyle = "#e74c3c"; ctx.fill();
-            
-            bullets.forEach((b, bi) => {
-                if(Math.hypot(b.x - e.x, b.y - e.y) < e.r) {
-                    enemies.splice(i, 1); bullets.splice(bi, 1);
-                }
-            });
+            e.y += 2; ctx.beginPath(); ctx.arc(e.x, e.y, e.r, 0, Math.PI*2);
+            ctx.fillStyle = "red"; ctx.fill();
         });
 
-        requestAnimationFrame(draw);
+        requestAnimationFrame(loop);
     }
 </script>
 </body>
 </html>
-
 
 
 
