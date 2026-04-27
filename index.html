@@ -1,52 +1,57 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="ar">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Z-Survival Online</title>
+    <title>Z-Survival: Master Edition</title>
     <style>
-        body { margin: 0; background: #000; overflow: hidden; font-family: sans-serif; color: white; }
-        canvas { display: block; width: 100vw; height: 100vh; background: #111; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; font-family: sans-serif; }
+        canvas { display: block; width: 100vw; height: 100vh; background: #0a0a0a; }
         
-        /* واجهة كتابة الاسم */
-        .lobby-overlay { 
+        /* الواجهات: اللوبي، المتجر، الموت */
+        .ui-screen { 
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
             background: rgba(0,0,0,0.9); display: flex; flex-direction: column; 
-            align-items: center; justify-content: center; z-index: 2000;
+            align-items: center; justify-content: center; z-index: 2000; color: white;
         }
+        #shop-screen { display: none; background: rgba(20, 20, 50, 0.95); }
+        
+        .btn-ui { padding: 12px 30px; background: #ff4444; color: white; border: none; border-radius: 8px; margin: 5px; font-weight: bold; }
+        .stats { position: fixed; top: 10px; left: 10px; color: white; z-index: 1500; font-size: 14px; }
 
-        #player-name-input {
-            padding: 15px; font-size: 18px; border-radius: 10px; border: 2px solid #ff4444;
-            margin-bottom: 20px; text-align: center; width: 260px; background: #222; color: white;
-        }
-
-        #start-btn {
-            padding: 15px 50px; font-size: 22px; background: #ff4444; 
-            color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: bold;
-        }
-
-        /* أزرار التحكم للموبايل */
-        .controls { position: fixed; bottom: 30px; width: 100%; display: flex; justify-content: space-between; padding: 0 40px; box-sizing: border-box; z-index: 1000; pointer-events: none; }
-        .btn { width: 75px; height: 75px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; pointer-events: auto; user-select: none; border: 1px solid rgba(255,255,255,0.3); }
-        #fire-btn { background: rgba(255,0,0,0.5); width: 100px; height: 100px; border: 2px solid white; }
+        /* أزرار التحكم (Landscape) */
+        .controls { position: fixed; bottom: 20px; width: 100%; display: flex; justify-content: space-between; padding: 0 40px; box-sizing: border-box; z-index: 1000; pointer-events: none; }
+        .btn-game { width: 65px; height: 65px; background: rgba(255,255,255,0.15); border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; pointer-events: auto; touch-action: none; }
+        #fire-btn { width: 100px; height: 100px; background: rgba(255,0,0,0.4); border: 3px solid #ff4444; }
     </style>
 </head>
 <body>
 
-<div id="lobby" class="lobby-overlay">
-    <h1 style="color: #ff4444; font-size: 40px; margin-bottom: 10px;">Z-SURVIVAL</h1>
-    <p>ادخل اسمك لبدء المعركة</p>
-    <input type="text" id="player-name-input" placeholder="اكتب اسمك هنا..." maxlength="12">
-    <button id="start-btn">دخول اللعبة</button>
+<div class="stats" id="game-stats">
+    الاسم: <span id="stat-name">-</span> | المستوى: <span id="stat-lv">1</span> | العملات: <span id="stat-coin">0</span>
+</div>
+
+<div id="lobby" class="ui-screen">
+    <h1 style="color: #ff4444;">Z-SURVIVAL: THE BOSSES</h1>
+    <input type="text" id="p-name" placeholder="ادخل اسمك..." style="padding: 10px; border-radius: 5px; margin-bottom: 15px;">
+    <button class="btn-ui" id="start-game">دخول المرحلة 1</button>
+</div>
+
+<div id="shop-screen" class="ui-screen">
+    <h2>🛒 متجر الأسلحة</h2>
+    <p>عملاتك: <span id="shop-coins">0</span></p>
+    <button class="btn-ui" onclick="buyWeapon('rapid')">سلاح سريع (50 عملة)</button>
+    <button class="btn-ui" onclick="buyWeapon('power')">سلاح قوي (100 عملة)</button>
+    <button class="btn-ui" style="background: #444;" onclick="closeShop()">إغلاق المتجر</button>
 </div>
 
 <div class="controls">
-    <div style="display: grid; grid-template-columns: repeat(3, 70px); gap: 10px;">
-        <div></div><div class="btn" id="up">↑</div><div></div>
-        <div class="btn" id="left">←</div><div></div><div class="btn" id="right">→</div>
-        <div></div><div class="btn" id="down">↓</div><div></div>
+    <div style="display: grid; grid-template-columns: repeat(3, 65px); gap: 5px;">
+        <div></div><div class="btn-game" id="u">↑</div><div></div>
+        <div class="btn-game" id="l">←</div><div></div><div class="btn-game" id="r">→</div>
+        <div></div><div class="btn-game" id="d">↓</div><div></div>
     </div>
-    <div class="btn" id="fire-btn">FIRE</div>
+    <div class="btn-game" id="fire-btn">FIRE</div>
 </div>
 
 <canvas id="gameCanvas"></canvas>
@@ -54,25 +59,88 @@
 <script>
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
 
-    document.getElementById('start-btn').onclick = function() {
-        const playerName = document.getElementById('player-name-input').value;
-        if (playerName.trim() === "") {
-            alert("أدخل اسمك أولاً يا بطل!");
-            return;
-        }
+    let gameState = "lobby";
+    let coins = 0; let level = 1; let playerName = "";
+    const player = { x: canvas.width/2, y: canvas.height/2, size: 30, speed: 5, weapon: 'normal' };
+    const bullets = []; const enemies = []; const keys = {};
+
+    // نظام المستويات والبوس
+    function spawnEnemies() {
+        if(gameState !== "playing") return;
+        let type = (level === 3) ? "boss" : "zombie"; // المستوى 3 هو مستوى البوس
+        enemies.push({ 
+            x: Math.random()*canvas.width, y: -50, 
+            hp: level * 2, isBoss: type === "boss",
+            size: type === "boss" ? 80 : 30
+        });
+        setTimeout(spawnEnemies, 2000 / level);
+    }
+
+    // ربط الأزرار
+    const bind = (id, k) => {
+        const el = document.getElementById(id);
+        el.ontouchstart = (e) => { e.preventDefault(); keys[k] = true; };
+        el.ontouchend = () => keys[k] = false;
+    };
+    bind('u','u'); bind('d','d'); bind('l','l'); bind('r','r');
+    document.getElementById('fire-btn').ontouchstart = (e) => {
+        e.preventDefault();
+        bullets.push({ x: player.x, y: player.y, s: 7 });
+    };
+
+    document.getElementById('start-game').onclick = () => {
+        playerName = document.getElementById('p-name').value || "Warrior";
+        document.getElementById('stat-name').innerText = playerName;
         document.getElementById('lobby').style.display = 'none';
-        alert("أهلاً بك يا " + playerName);
+        gameState = "playing";
+        spawnEnemies();
+        update();
     };
 
-    window.onresize = () => {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-    };
+    function buyWeapon(type) {
+        if(type === 'rapid' && coins >= 50) { player.weapon = 'rapid'; coins -= 50; }
+        closeShop();
+    }
+    function closeShop() { document.getElementById('shop-screen').style.display = 'none'; gameState = "playing"; }
+
+    function update() {
+        if(gameState !== "playing") return;
+        ctx.clearRect(0,0,canvas.width, canvas.height);
+
+        // حركة اللاعب
+        if(keys.u) player.y -= player.speed; if(keys.d) player.y += player.speed;
+        if(keys.l) player.x -= player.speed; if(keys.r) player.x += player.speed;
+
+        ctx.fillStyle = "#00ff00"; ctx.fillRect(player.x-15, player.y-15, player.size, player.size);
+        ctx.fillStyle = "white"; ctx.fillText(playerName, player.x-15, player.y-20);
+
+        bullets.forEach((b, i) => {
+            b.y -= b.s; ctx.fillStyle = "yellow"; ctx.fillRect(b.x, b.y, 5, 10);
+        });
+
+        enemies.forEach((e, i) => {
+            e.y += 1.5; ctx.fillStyle = e.isBoss ? "purple" : "red";
+            ctx.fillRect(e.x, e.y, e.size, e.size);
+            if(e.isBoss) ctx.fillText("BOSS HP: " + e.hp, e.x, e.y - 10);
+
+            bullets.forEach((b, bi) => {
+                if(b.x > e.x && b.x < e.x+e.size && b.y > e.y && b.y < e.y+e.size) {
+                    e.hp--; bullets.splice(bi, 1);
+                    if(e.hp <= 0) { 
+                        enemies.splice(i, 1); coins += 10; 
+                        document.getElementById('stat-coin').innerText = coins;
+                        if(e.isBoss) { level++; document.getElementById('stat-lv').innerText = level; }
+                    }
+                }
+            });
+        });
+        requestAnimationFrame(update);
+    }
 </script>
 </body>
 </html>
+
 
 
