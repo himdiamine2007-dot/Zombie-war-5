@@ -1,94 +1,113 @@
+
 <!DOCTYPE html>
 <html lang="ar">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CS:GO Mobile V10</title>
+    <title>مغامرة النحلة الزوينة</title>
     <style>
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #0b0e11; }
-        canvas { display: block; width: 100vw; height: 100vh; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #87CEEB; font-family: 'Arial', sans-serif; }
+        canvas { display: block; background: linear-gradient(#87CEEB, #E0F7FA); }
         
-        /* نيشان احترافي صغير */
-        #cross { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 20px; height: 20px; pointer-events: none; }
-        #cross::before { content: ''; position: absolute; left: 9px; width: 2px; height: 20px; background: #0f0; box-shadow: 0 0 5px #0f0; }
-        #cross::after { content: ''; position: absolute; top: 9px; width: 20px; height: 2px; background: #0f0; box-shadow: 0 0 5px #0f0; }
-
-        /* HUD نقي */
-        .hud { position: fixed; bottom: 15px; left: 15px; color: #f1c40f; font-family: monospace; font-size: 18px; text-shadow: 1px 1px #000; pointer-events: none; }
+        /* واجهة النقط */
+        #ui { position: fixed; top: 20px; width: 100%; text-align: center; font-size: 30px; font-weight: bold; color: #FFD700; text-shadow: 2px 2px #000; pointer-events: none; }
         
-        /* سلاح مرسوم بالكود (باش ميتلفش) */
-        #gun-layer { position: fixed; bottom: 0; right: 10%; width: 300px; height: 200px; pointer-events: none; transition: 0.05s; }
-
-        /* التحكم */
-        #shoot { position: fixed; bottom: 40px; right: 40px; width: 90px; height: 90px; border: 3px solid #f1c40f; border-radius: 50%; background: rgba(0,0,0,0.4); color: #fff; font-weight: bold; }
-        #joy { position: fixed; bottom: 40px; left: 40px; width: 120px; height: 120px; background: rgba(255,255,255,0.05); border: 1px solid #444; border-radius: 50%; }
-        #stick { position: absolute; top: 35px; left: 35px; width: 50px; height: 50px; background: #555; border-radius: 50%; }
+        /* أزرار التحكم (يمين ويسار) */
+        .controls { position: fixed; bottom: 30px; width: 100%; display: flex; justify-content: space-around; padding: 0 20px; box-sizing: border-box; }
+        .move-btn { width: 80px; height: 80px; background: rgba(255, 255, 255, 0.7); border: 5px solid #FFD700; border-radius: 50%; font-size: 40px; display: flex; align-items: center; justify-content: center; touch-action: none; }
     </style>
 </head>
 <body>
 
-<canvas id="g"></canvas>
-<div id="cross"></div>
-<div class="hud">✚ 100 | 💰 $<span id="m">0</span></div>
+<div id="ui">🌸 الورد: <span id="score">0</span></div>
 
-<svg id="gun-layer" viewBox="0 0 200 200">
-    <rect x="100" y="100" width="80" height="25" fill="#2c3e50" rx="3"/>
-    <rect x="50" y="105" width="60" height="15" fill="#1a1a1a" />
-    <rect x="110" y="125" width="15" height="40" fill="#1a1a1a" transform="rotate(15 110 125)"/>
-    <rect x="160" y="95" width="30" height="10" fill="#34495e" />
-</svg>
+<div class="controls">
+    <div class="move-btn" id="left">⬅️</div>
+    <div class="move-btn" id="right">➡️</div>
+</div>
 
-<div id="joy"><div id="stick"></div></div>
-<button id="shoot">FIRE</button>
+<canvas id="game"></canvas>
 
 <script>
-    const c = document.getElementById('g'), ctx = c.getContext('2d');
-    c.width = window.innerWidth; c.height = window.innerHeight;
-    let money = 0; let enemies = [];
-    let mx = 0, my = 0;
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
 
-    // تحكم الجويستيك
-    document.getElementById('joy').ontouchmove = (e) => {
-        const t = e.touches[0], r = e.currentTarget.getBoundingClientRect();
-        const dx = t.clientX - (r.left + 60), dy = t.clientY - (r.top + 60);
-        const dist = Math.min(Math.hypot(dx, dy), 40), ang = Math.atan2(dy, dx);
-        mx = (Math.cos(ang) * dist) / 40; my = (Math.sin(ang) * dist) / 40;
-        document.getElementById('stick').style.transform = `translate(${Math.cos(ang)*dist}px, ${Math.sin(ang)*dist}px)`;
-    };
-    document.getElementById('joy').ontouchend = () => { mx=0; my=0; document.getElementById('stick').style.transform = 'none'; };
+    let score = 0;
+    let playing = true;
+    const player = { x: canvas.width / 2, y: canvas.height - 120, w: 60, h: 60, speed: 7 };
+    const items = [];
 
-    // الضرب
-    document.getElementById('shoot').ontouchstart = (e) => {
-        e.preventDefault();
-        money += 50; document.getElementById('m').innerText = money;
-        document.getElementById('gun-layer').style.transform = 'translateY(15px) rotate(-3deg)';
-        setTimeout(() => document.getElementById('gun-layer').style.transform = 'none', 50);
-        enemies.forEach((e, i) => {
-            if(Math.hypot(e.x - c.width/2, e.y - c.height/2) < (15 + e.z*100)) enemies.splice(i,1);
+    // تحكم اللمس
+    let moveLeft = false;
+    let moveRight = false;
+
+    document.getElementById('left').ontouchstart = () => moveLeft = true;
+    document.getElementById('left').ontouchend = () => moveLeft = false;
+    document.getElementById('right').ontouchstart = () => moveRight = true;
+    document.getElementById('right').ontouchend = () => moveRight = false;
+
+    function spawnItem() {
+        if (!playing) return;
+        const types = [
+            { char: '🌸', type: 'good', score: 10 },
+            { char: '🌼', type: 'good', score: 20 },
+            { char: '💣', type: 'bad', score: 0 }
+        ];
+        const item = types[Math.floor(Math.random() * types.length)];
+        items.push({ 
+            x: Math.random() * (canvas.width - 40), 
+            y: -50, 
+            char: item.char, 
+            type: item.type,
+            points: item.score,
+            speed: 3 + Math.random() * 3 
         });
-    };
+        setTimeout(spawnItem, 1000);
+    }
 
     function loop() {
-        ctx.fillStyle = '#0b0e11'; ctx.fillRect(0,0,c.width, c.height);
-        
-        // رسم "الخريطة" (Floor)
-        ctx.strokeStyle = '#1a2a3a';
-        for(let i=-1000; i<2000; i+=100) {
-            ctx.beginPath(); ctx.moveTo(i + (mx*-200), c.height); ctx.lineTo(c.width/2, c.height/2); ctx.stroke();
-        }
+        if (!playing) return;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        enemies.forEach((e, i) => {
-            e.z += 0.005; e.y += (e.z * 10);
-            let size = 10 + (e.z * 120);
-            let x = c.width/2 + (e.x - c.width/2) * (e.z * 2) + (mx*-100);
-            
-            ctx.fillStyle = '#c0392b'; ctx.beginPath(); ctx.arc(x, e.y, size, 0, 7); ctx.fill();
-            if(e.y > c.height) enemies.splice(i,1);
+        // تحريك اللاعب
+        if (moveLeft && player.x > 0) player.x -= player.speed;
+        if (moveRight && player.x < canvas.width - player.w) player.x += player.speed;
+
+        // رسم "النحلة" (اللاعب)
+        ctx.font = '50px Arial';
+        ctx.fillText('🐝', player.x, player.y);
+
+        // تحريك ورسم الأشياء (الورد والقنابل)
+        items.forEach((item, index) => {
+            item.y += item.speed;
+            ctx.fillText(item.char, item.x, item.y);
+
+            // تصادم
+            if (item.y > player.y - 40 && item.y < player.y + 20 &&
+                item.x > player.x - 40 && item.x < player.x + 40) {
+                
+                if (item.type === 'good') {
+                    score += item.points;
+                    document.getElementById('score').innerText = score;
+                    items.splice(index, 1);
+                } else {
+                    alert("أوه! انتبه من القنبلة! 🙀\nنقاطك: " + score);
+                    score = 0;
+                    document.getElementById('score').innerText = score;
+                    items.length = 0;
+                }
+            }
+
+            // مسح الأشياء اللي خرجات من الشاشة
+            if (item.y > canvas.height) items.splice(index, 1);
         });
+
         requestAnimationFrame(loop);
     }
 
-    setInterval(() => enemies.push({x: Math.random()*c.width, y: c.height/2, z: 0.1}), 1500);
+    spawnItem();
     loop();
 </script>
 </body>
