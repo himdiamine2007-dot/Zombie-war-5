@@ -1,66 +1,50 @@
-
 <!DOCTYPE html>
 <html lang="ar">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Z-Strike: Global Offensive</title>
+    <title>Z-Strike: Pure Edition</title>
     <style>
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #0b0e11; font-family: 'Arial', sans-serif; }
-        canvas { display: block; width: 100vw; height: 100vh; background: radial-gradient(circle, #1b2838 0%, #050505 100%); }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #0b0e11; font-family: sans-serif; }
+        canvas { display: block; width: 100vw; height: 100vh; background: #0b0e11; }
         
-        /* CS:GO HUD */
+        /* HUD الاحترافي */
         .hud { position: fixed; inset: 0; pointer-events: none; color: #fff; z-index: 10; }
         .crosshair { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 20px; height: 20px; }
-        .crosshair::before { content: ''; position: absolute; top: 0; left: 9px; width: 2px; height: 20px; background: #0f0; }
-        .crosshair::after { content: ''; position: absolute; top: 9px; left: 0; width: 20px; height: 2px; background: #0f0; }
+        .crosshair:before { content: ''; position: absolute; left: 9px; width: 2px; height: 20px; background: #0f0; }
+        .crosshair:after { content: ''; position: absolute; top: 9px; width: 20px; height: 2px; background: #0f0; }
 
-        /* Stats */
-        .top-info { position: absolute; top: 20px; width: 100%; display: flex; justify-content: center; gap: 50px; font-weight: bold; color: #f1c40f; }
-        .boss-timer { color: #ff4444; font-size: 24px; text-shadow: 0 0 10px red; }
-
-        /* الأزرار الاحترافية */
+        /* الأزرار */
         .controls { position: fixed; inset: 0; pointer-events: none; }
-        .btn { position: absolute; background: rgba(0,0,0,0.6); border: 1px solid #444; color: #ccc; display: flex; align-items: center; justify-content: center; pointer-events: auto; touch-action: none; border-radius: 5px; }
-        #fire { bottom: 40px; right: 40px; width: 85px; height: 85px; border-radius: 50%; border: 3px solid #f1c40f; color: #fff; font-weight: bold; }
-        #shop-btn { top: 20px; right: 20px; width: 100px; height: 40px; background: #f1c40f; color: #000; font-weight: bold; }
+        .btn { position: absolute; pointer-events: auto; touch-action: none; display: flex; align-items: center; justify-content: center; }
+        
+        #fire { bottom: 40px; right: 40px; width: 90px; height: 90px; border-radius: 50%; border: 3px solid #f1c40f; background: rgba(241, 196, 15, 0.1); color: #fff; font-weight: bold; }
+        #shop-btn { top: 20px; right: 20px; padding: 10px 20px; background: #f1c40f; color: #000; border-radius: 5px; font-weight: bold; border: none; }
 
-        /* الجويستيك (يسار) */
-        .joy-area { position: absolute; bottom: 40px; left: 40px; width: 120px; height: 120px; background: rgba(255,255,255,0.05); border-radius: 50%; border: 1px solid rgba(255,255,255,0.1); }
-        .joy-stick { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 50px; height: 50px; background: #333; border-radius: 50%; border: 2px solid #555; }
+        /* الجويستيك النقي */
+        .joy-base { position: absolute; bottom: 40px; left: 40px; width: 120px; height: 120px; background: rgba(255,255,255,0.05); border-radius: 50%; border: 1px solid rgba(255,255,255,0.1); }
+        .joy-stick { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 50px; height: 50px; background: #444; border-radius: 50%; border: 2px solid #666; }
 
-        /* Shop Menu */
-        .menu { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #1a1a1a; padding: 25px; border: 2px solid #f1c40f; display: none; z-index: 100; pointer-events: auto; text-align: center; }
+        /* شاشة البداية */
+        .screen { position: fixed; inset: 0; background: #0b0e11; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #f1c40f; }
     </style>
 </head>
 <body>
 
-<div id="lobby" style="position:fixed; inset:0; background:#000; z-index:200; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#f1c40f;">
-    <h1 style="letter-spacing:10px;">Z-STRIKE</h1>
-    <p style="color:#666">GLOBAL SURVIVAL MOD</p>
-    <button style="padding:15px 50px; background:#f1c40f; border:none; font-weight:bold; margin-top:20px;" onclick="startGame()">CONNECT</button>
+<div id="lobby" class="screen">
+    <h1 style="letter-spacing: 8px;">Z-STRIKE</h1>
+    <button style="padding: 15px 40px; background: #f1c40f; border: none; font-weight: bold;" onclick="init()">START MISSION</button>
 </div>
 
 <div class="hud">
     <div class="crosshair"></div>
-    <div class="top-info">
-        <div>💰 $<span id="cash">0</span></div>
-        <div class="boss-timer" id="timer">02:00</div>
-        <div>🏆 LVL: <span id="lvl">1/4</span></div>
-    </div>
-    <div class="btn" id="shop-btn" onclick="toggleShop()">SHOP [B]</div>
-</div>
-
-<div id="shop" class="menu">
-    <h2 style="color:#f1c40f">BUY MENU</h2>
-    <button style="width:100%; margin:5px; padding:10px;" onclick="buy(1000, 'AK47')">AK-47 [$1000]</button>
-    <button style="width:100%; margin:5px; padding:10px;" onclick="buy(5000, 'AWM')">AWM SNIPER [$5000]</button>
-    <button style="width:100%; margin:5px; padding:10px; background:#444; color:#fff;" onclick="toggleShop()">CLOSE</button>
+    <div style="position: absolute; top: 20px; left: 20px; font-size: 18px;">💰 $<span id="cash">0</span> | ⏳ <span id="timer">02:00</span></div>
+    <button id="shop-btn" class="btn" onclick="openShop()">SHOP</button>
 </div>
 
 <div class="controls">
-    <div class="joy-area" id="jBase"><div class="joy-stick" id="jStick"></div></div>
-    <div class="btn" id="fire">FIRE</div>
+    <div class="joy-base" id="jBase"><div class="joy-stick" id="jStick"></div></div>
+    <button id="fire" class="btn">FIRE</button>
 </div>
 
 <canvas id="game"></canvas>
@@ -70,11 +54,11 @@
     const ctx = canvas.getContext('2d');
     canvas.width = window.innerWidth; canvas.height = window.innerHeight;
 
-    let active = false; let cash = 0; let level = 1; let weapon = "Pistol"; let time = 120;
-    const player = { x: canvas.width/2, y: canvas.height/2, r: 15, speed: 4.5 };
+    let playing = false; let cash = 0; let level = 1; let time = 120;
+    const player = { x: canvas.width/2, y: canvas.height/2, r: 15, speed: 4 };
     const enemies = []; const bullets = [];
 
-    // التحكم
+    // تحكم الجويستيك
     let mx = 0, my = 0;
     const jBase = document.getElementById('jBase');
     const jStick = document.getElementById('jStick');
@@ -93,89 +77,64 @@
     });
 
     jBase.addEventListener('touchend', () => { mx=0; my=0; jStick.style.left='50%'; jStick.style.top='50%'; });
+    document.getElementById('fire').ontouchstart = (e) => { e.preventDefault(); bullets.push({x: player.x, y: player.y}); };
 
-    document.getElementById('fire').ontouchstart = (e) => { e.preventDefault(); shoot(); };
+    function init() { document.getElementById('lobby').style.display='none'; playing=true; spawn(); tick(); loop(); }
 
-    function shoot() {
-        let p = { x: player.x, y: player.y, dmg: (weapon==="AK47"?3:1) };
-        bullets.push(p);
-        if(weapon === "AWM") bullets.push({...p, y: p.y-20});
-    }
-
-    function toggleShop() { 
-        const s = document.getElementById('shop');
-        s.style.display = s.style.display === 'block' ? 'none' : 'block';
-    }
-
-    function buy(cost, w) {
-        if(cash >= cost) { cash -= cost; weapon = w; document.getElementById('cash').innerText = cash; toggleShop(); }
-    }
-
-    function startGame() {
-        document.getElementById('lobby').style.display='none';
-        active = true; spawn(); countdown(); loop();
-    }
-
-    function countdown() {
-        if(!active) return;
+    function tick() {
+        if(!playing) return;
         if(time > 0) {
             time--;
             document.getElementById('timer').innerText = `0${Math.floor(time/60)}:${time%60 < 10 ? '0'+time%60 : time%60}`;
-            setTimeout(countdown, 1000);
+            setTimeout(tick, 1000);
         } else { spawnBoss(); }
     }
 
     function spawnBoss() {
-        enemies.push({x: canvas.width/2, y: -50, r: 70, hp: 100 * level, type: 'BOSS', color: '#9b59b6'});
+        enemies.push({x: canvas.width/2, y: -50, r: 60, hp: 50*level, type: 'BOSS'});
         time = 120; level = Math.min(level+1, 4);
-        document.getElementById('lvl').innerText = level + "/4";
     }
 
     function spawn() {
-        if(!active) return;
-        let types = [
-            {r:18, hp:2, c:'#e74c3c', s:1.5 + level*0.2}, // Normal
-            {r:14, hp:1, c:'#f39c12', s:3 + level*0.3}    // Fast
-        ];
-        let t = types[Math.floor(Math.random()*types.length)];
-        enemies.push({x: Math.random()*canvas.width, y: -50, ...t});
-        setTimeout(spawn, 2000 / (level * 1.2));
+        if(!playing) return;
+        enemies.push({x: Math.random()*canvas.width, y: -20, r: 15, hp: 2, s: 1.5 + (level*0.3)});
+        setTimeout(spawn, 2000 / level);
     }
 
     function loop() {
-        if(!active) return;
-        ctx.fillStyle = "rgba(11, 14, 17, 0.4)"; ctx.fillRect(0,0,canvas.width, canvas.height);
+        if(!playing) return;
+        ctx.fillStyle = "#0b0e11"; ctx.fillRect(0,0,canvas.width, canvas.height);
 
         player.x += mx * player.speed; player.y += my * player.speed;
 
-        // Player Tactical Circle
+        // Player
         ctx.beginPath(); ctx.arc(player.x, player.y, player.r, 0, Math.PI*2);
         ctx.fillStyle = "#4a6a8a"; ctx.fill(); ctx.strokeStyle = "#fff"; ctx.stroke();
 
         bullets.forEach((b, i) => {
-            b.y -= 15;
-            ctx.fillStyle = weapon === "Pistol" ? "#fff" : "#f1c40f";
-            ctx.fillRect(b.x-1, b.y, 2, 18);
+            b.y -= 10; ctx.fillStyle = "#f1c40f"; ctx.fillRect(b.x-1, b.y, 2, 15);
             if(b.y < 0) bullets.splice(i, 1);
         });
 
         enemies.forEach((e, i) => {
-            e.y += e.s || 1.5;
+            e.y += e.s || 2;
             ctx.beginPath(); ctx.arc(e.x, e.y, e.r, 0, Math.PI*2);
-            ctx.fillStyle = e.c || '#ff0000'; ctx.fill();
+            ctx.fillStyle = e.type === 'BOSS' ? "#9b59b6" : "#e74c3c"; ctx.fill();
 
             bullets.forEach((b, bi) => {
                 if(Math.hypot(b.x-e.x, b.y-e.y) < e.r) {
-                    e.hp -= b.dmg; bullets.splice(bi, 1);
+                    e.hp--; bullets.splice(bi, 1);
                     if(e.hp <= 0) { cash += 50; document.getElementById('cash').innerText = cash; enemies.splice(i,1); }
                 }
             });
         });
         requestAnimationFrame(loop);
     }
+    function openShop() { alert("Shop coming in next update! Keep killing zombies!"); }
 </script>
 </body>
 </html>
+
 
 
 
