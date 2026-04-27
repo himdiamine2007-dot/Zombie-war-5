@@ -1,18 +1,50 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Z-War Mobile: Evolution</title>
+    <style>
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; }
+        canvas { display: block; background: radial-gradient(circle, #2c3e50, #000); width: 100vw; height: 100vh; }
+        
+        /* HUD - واجهة فري فاير الاحترافية */
+        .controls { position: fixed; inset: 0; pointer-events: none; z-index: 100; font-family: sans-serif; }
+        
+        /* تصميم الزر الشفاف والدائري */
+        .btn { position: absolute; background: rgba(255,255,255,0.08); border: 2px solid rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.8); pointer-events: auto; touch-action: none; backdrop-filter: blur(5px); box-shadow: 0 0 10px rgba(255,255,255,0.1); }
+        .btn:active { background: rgba(241, 196, 15, 0.4); transform: scale(0.92); border-color: #f1c40f; }
 
-<body
+        /* الجويستيك الاحترافي (منطقة الحركة) */
+        .joystick-base { position: absolute; bottom: 40px; left: 40px; width: 130px; height: 130px; background: rgba(255,255,255,0.03); border-radius: 50%; border: 1px dashed rgba(255,255,255,0.15); pointer-events: auto; }
+        .joystick-stick { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 55px; height: 55px; background: rgba(255,255,255,0.2); border-radius: 50%; border: 2px solid rgba(255,255,255,0.8); }
 
-<div id="lobby" class="screen">
-    <h1 style="letter-spacing: 5px;">BATTLEGROUND Z</h1>
-    <p>MOBILE HUD V3.0</p>
+        /* أزرار الأفعال (اليمين) - بستايل فري فاير */
+        #fire { bottom: 50px; right: 40px; width: 100px; height: 100px; background: rgba(231, 76, 60, 0.3); border: 3px solid #e74c3c; font-size: 24px; color: #fff; font-weight: bold; }
+        #jump { bottom: 160px; right: 50px; width: 60px; height: 60px; font-size: 20px; }
+        #crouch { bottom: 50px; right: 160px; width: 60px; height: 60px; font-size: 20px; }
+        #run { top: 20px; left: 20px; width: 50px; height: 50px; background: rgba(46, 204, 113, 0.2); border: 2px solid #2ecc71; font-size: 18px; color: #fff; }
+
+        /* شاشة البداية */
+        .start-screen { position: fixed; inset: 0; background: #000; z-index: 200; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #f1c40f; }
+        .start-btn { padding: 15px 70px; background: #f1c40f; border: none; border-radius: 30px; font-weight: bold; font-size: 20px; margin-top: 25px; cursor: pointer; color: #000; transition: 0.3s; }
+        .start-btn:active { transform: scale(0.95); }
+    </style>
+</head>
+<body>
+
+<div id="lobby" class="start-screen">
+    <h1 style="letter-spacing: 5px; font-size: 40px;">Z-WAR MOBILE</h1>
+    <p style="color:#fff; font-size: 14px;">MODIFIED HUD V4.0 - EVOLUTION</p>
     <button class="start-btn" onclick="start()">START GAME</button>
 </div>
 
 <div class="controls">
-    <div class="btn" id="sprint">🏃</div>
-    <div class="joy-base" id="jBase"><div class="joy-stick" id="jStick"></div></div>
+    <div class="btn" id="run">🏃</div>
+    <div class="joystick-base" id="joyBase"><div class="joystick-stick" id="joyStick"></div></div>
     <div class="btn" id="fire">🔥</div>
     <div class="btn" id="jump">🚀</div>
-    <div class="btn" id="sit">⬇️</div>
+    <div class="btn" id="crouch">⬇️</div>
 </div>
 
 <canvas id="game"></canvas>
@@ -24,17 +56,17 @@
 
     let playing = false;
     const player = { x: canvas.width/2, y: canvas.height/2, r: 20, speed: 5, normal: 5 };
-    const bullets = []; const enemies = [];
+    const enemies = []; const bullets = [];
 
-    // نظام الجويستيك
+    // نظام تحكم الجويستيك (الحركة الانسيابية)
     let moveX = 0, moveY = 0;
-    const jBase = document.getElementById('jBase');
-    const jStick = document.getElementById('jStick');
+    const joyBase = document.getElementById('joyBase');
+    const joyStick = document.getElementById('joyStick');
 
-    jBase.addEventListener('touchmove', e => {
+    joyBase.addEventListener('touchmove', e => {
         e.preventDefault();
         const touch = e.touches[0];
-        const rect = jBase.getBoundingClientRect();
+        const rect = joyBase.getBoundingClientRect();
         const centerX = rect.left + rect.width / 2;
         const centerY = rect.top + rect.height / 2;
         const dx = touch.clientX - centerX;
@@ -45,18 +77,26 @@
         moveX = (Math.cos(angle) * dist) / 40;
         moveY = (Math.sin(angle) * dist) / 40;
         
-        jStick.style.left = `calc(50% + ${Math.cos(angle) * dist}px)`;
-        jStick.style.top = `calc(50% + ${Math.sin(angle) * dist}px)`;
+        joyStick.style.left = `calc(50% + ${Math.cos(angle) * dist}px)`;
+        joyStick.style.top = `calc(50% + ${Math.sin(angle) * dist}px)`;
     });
 
-    jBase.addEventListener('touchend', () => {
+    joyBase.addEventListener('touchend', () => {
         moveX = 0; moveY = 0;
-        jStick.style.left = '50%'; jStick.style.top = '50%';
+        joyStick.style.left = '50%'; joyStick.style.top = '50%';
     });
 
-    document.getElementById('fire').ontouchstart = (e) => { e.preventDefault(); bullets.push({x: player.x, y: player.y}); };
-    document.getElementById('sprint').ontouchstart = (e) => { e.preventDefault(); player.speed = 10; };
-    document.getElementById('sprint').ontouchend = () => player.speed = player.normal;
+    // ربط الأزرار بالأفعال
+    document.getElementById('fire').ontouchstart = (e) => { e.preventDefault(); shoot(); };
+    document.getElementById('jump').ontouchstart = (e) => { e.preventDefault(); player.y -= 100; setTimeout(()=>player.y+=100, 300); };
+    document.getElementById('crouch').ontouchstart = (e) => { e.preventDefault(); player.r = 12; player.speed = 2.5; };
+    document.getElementById('crouch').ontouchend = () => { player.r = 20; player.speed = 5; };
+    document.getElementById('run').ontouchstart = (e) => { e.preventDefault(); player.speed = 10; };
+    document.getElementById('run').ontouchend = () => player.speed = player.normal;
+
+    function shoot() {
+        bullets.push({x: player.x, y: player.y});
+    }
 
     function start() { document.getElementById('lobby').style.display='none'; playing=true; spawn(); loop(); }
     function spawn() { if(playing) { enemies.push({x: Math.random()*canvas.width, y: -20, r: 20}); setTimeout(spawn, 2000); } }
@@ -65,17 +105,19 @@
         if(!playing) return;
         ctx.fillStyle = "rgba(0,0,0,0.3)"; ctx.fillRect(0,0,canvas.width, canvas.height);
 
+        // تحريك اللاعب بناءً على الجويستيك
         player.x += moveX * player.speed; player.y += moveY * player.speed;
 
+        // رسم اللاعب كشخصية دائرية (PRO)
         ctx.beginPath(); ctx.arc(player.x, player.y, player.r, 0, Math.PI*2);
         ctx.fillStyle = "#f1c40f"; ctx.fill(); ctx.strokeStyle = "#fff"; ctx.stroke();
 
         bullets.forEach((b, i) => {
-            b.y -= 12; ctx.fillStyle = "#e74c3c"; ctx.fillRect(b.x-2, b.y, 4, 15);
+            b.y -= 12; ctx.fillStyle = "red"; ctx.fillRect(b.x-2, b.y, 4, 15);
         });
 
         enemies.forEach((e, i) => {
-            e.y += 2.5; ctx.beginPath(); ctx.arc(e.x, e.y, e.r, 0, Math.PI*2);
+            e.y += 2; ctx.beginPath(); ctx.arc(e.x, e.y, e.r, 0, Math.PI*2);
             ctx.fillStyle = "#e74c3c"; ctx.fill();
         });
         requestAnimationFrame(loop);
@@ -83,6 +125,7 @@
 </script>
 </body>
 </html>
+
 
 
 
