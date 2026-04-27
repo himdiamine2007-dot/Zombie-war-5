@@ -3,43 +3,39 @@
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Survival 2026: World 4K</title>
+    <title>Easy World Tour - Kids Edition</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #000; font-family: 'Segoe UI', sans-serif; touch-action: none; color: white; }
-        canvas { display: block; filter: saturate(1.2) contrast(1.1); }
+        body { margin: 0; overflow: hidden; background: #000; font-family: 'Arial', sans-serif; touch-action: none; }
+        canvas { display: block; }
         
-        /* واجهة HUD عصرية */
-        #ui { position: fixed; top: 15px; width: 100%; display: flex; justify-content: space-around; z-index: 10; pointer-events: none; }
-        .stat { background: rgba(0,0,0,0.6); padding: 5px 15px; border: 1px solid #00d4ff; border-radius: 20px; backdrop-filter: blur(5px); }
-        .val { font-weight: 900; color: #00d4ff; font-size: 18px; }
+        /* واجهة سهلة للأطفال */
+        #ui { position: fixed; top: 10px; width: 100%; display: flex; justify-content: space-around; z-index: 10; pointer-events: none; }
+        .box { background: rgba(255,255,255,0.2); padding: 5px 15px; border-radius: 15px; border: 2px solid #fff; backdrop-filter: blur(5px); color: white; font-weight: bold; font-size: 20px; }
 
-        /* مكان الرحلة */
-        #location-tag { position: fixed; top: 50px; width: 100%; text-align: center; font-size: 20px; font-weight: 800; color: #FFD700; text-shadow: 0 0 10px #000; z-index: 5; }
+        #city-name { position: fixed; top: 55px; width: 100%; text-align: center; color: #FFD700; font-size: 24px; font-weight: 900; text-shadow: 2px 2px #000; z-index: 5; }
 
-        /* أنيميشن النرد للأطفال */
-        #dice-box { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,0.8); z-index: 100; backdrop-filter: blur(10px); }
-        #rolling-dice { font-size: 100px; animation: roll 0.5s infinite; text-shadow: 0 0 30px #fff; }
-        @keyframes roll { 0% { transform: rotate(0) scale(1.2); } 50% { transform: rotate(180deg) scale(1.5); } 100% { transform: rotate(360deg) scale(1.2); } }
+        /* أنيميشن النرد */
+        #dice-screen { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,0.7); z-index: 100; }
+        #rolling { font-size: 120px; animation: bounce 0.4s infinite; }
+        @keyframes bounce { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.3) rotate(10deg); } }
 
-        /* التحكم */
         .controls { position: fixed; bottom: 30px; width: 100%; display: flex; justify-content: space-around; z-index: 10; }
-        .btn { width: 80px; height: 80px; background: rgba(255,255,255,0.1); border: 2px solid rgba(0,212,255,0.5); border-radius: 20px; font-size: 35px; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
-        #fire-btn { border-color: #ff4444; background: rgba(255,68,68,0.2); box-shadow: 0 0 20px rgba(255,68,68,0.3); }
+        .btn { width: 90px; height: 90px; background: rgba(255,255,255,0.3); border: 3px solid #fff; border-radius: 50%; font-size: 40px; display: flex; align-items: center; justify-content: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        #fire-btn { background: #ff4444; border-color: #fff; }
     </style>
 </head>
 <body>
 
 <div id="ui">
-    <div class="stat">💎 <span class="val" id="coins">0</span></div>
-    <div class="stat">❤️ <span class="val" id="hp">100</span></div>
-    <div class="stat">⏱️ <span class="val" id="timer">0</span>s</div>
+    <div class="box">❤️ <span id="hp">100</span></div>
+    <div class="box">💎 <span id="coins">0</span></div>
 </div>
 
-<div id="location-tag">PARIS 🗼</div>
-<div id="dice-box"><div id="rolling-dice">🎲</div></div>
+<div id="city-name">PARIS 🗼</div>
+<div id="dice-screen"><div id="rolling">🎲</div></div>
 
 <div class="controls">
-    <div style="display:flex; gap:15px;">
+    <div style="display:flex; gap:20px;">
         <div class="btn" id="l">⬅️</div>
         <div class="btn" id="r">➡️</div>
     </div>
@@ -52,92 +48,90 @@
     const canvas = document.getElementById('c'), ctx = canvas.getContext('2d');
     canvas.width = window.innerWidth; canvas.height = window.innerHeight;
 
-    let coins = 0, hp = 100, score = 0, px = canvas.width/2-30;
-    let enemies = [], pBullets = [], eBullets = [], particles = [], dices = [];
-    let ml = false, mr = false, bgIdx = 0;
+    let coins = 0, hp = 100, px = canvas.width/2-35;
+    let enemies = [], particles = [], dices = [], ml = false, mr = false;
+    let bgIdx = 0;
 
-    // الخلفيات السياحية
-    const travel = [
-        { name: 'PARIS 🗼', c1: '#1e3c72', c2: '#2a5298' },
-        { name: 'DUBAI 🏙️', c1: '#f8b500', c2: '#fceabb' },
-        { name: 'TOKYO ⛩️', c1: '#6a11cb', c2: '#2575fc' },
-        { name: 'EGYPT 🏜️', c1: '#e65c00', c2: '#F9D423' }
+    // صور الخلفيات الحقيقية
+    const worlds = [
+        { n: 'PARIS 🗼', url: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?q=80&w=1000&auto=format&fit=crop' },
+        { n: 'DUBAI 🏙️', url: 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?q=80&w=1000&auto=format&fit=crop' },
+        { n: 'EGYPT 🏜️', url: 'https://images.unsplash.com/photo-1503177119275-0aa32b3a9368?q=80&w=1000&auto=format&fit=crop' }
     ];
 
-    setInterval(() => { if(hp > 0) { score++; document.getElementById('timer').innerText = score; } }, 1000);
+    const bgImg = new Image();
+    bgImg.src = worlds[bgIdx].url;
 
-    const setupBtn = (id, action) => { const b = document.getElementById(id); b.ontouchstart = (e) => { e.preventDefault(); action(true); }; b.ontouchend = () => action(false); };
-    setupBtn('l', v => ml = v); setupBtn('r', v => mr = v);
+    const setupBtn = (id, act) => { const b = document.getElementById(id); b.ontouchstart=(e)=>{e.preventDefault(); act(true)}; b.ontouchend=()=>act(false); };
+    setupBtn('l', v=>ml=v); setupBtn('r', v=>mr=v);
 
     document.getElementById('fire-btn').ontouchstart = (e) => {
         e.preventDefault();
+        // ضربة واسعة وسهلة للأطفال
         enemies.forEach((en, i) => {
-            if(Math.abs(en.x - px) < 140) {
-                explode(en.x, en.y, en.char==='👹'?'#ff0':'#0ff');
-                enemies.splice(i, 1); coins += 5;
+            if(Math.abs(en.x - px) < 180) { // مساحة تفركيع كبيرة
+                explode(en.x, en.y, '#fff');
+                enemies.splice(i, 1); coins += 10;
                 document.getElementById('coins').innerText = coins;
-                if(coins % 50 === 0 && bgIdx < travel.length-1) {
-                    bgIdx++; document.getElementById('location-tag').innerText = travel[bgIdx].name;
+                if(coins % 100 === 0 && bgIdx < worlds.length-1) {
+                    bgIdx++; bgImg.src = worlds[bgIdx].url;
+                    document.getElementById('city-name').innerText = worlds[bgIdx].n;
                 }
-                if(Math.random() > 0.7) dices.push({x: en.x, y: en.y});
+                if(Math.random() > 0.6) dices.push({x: en.x, y: en.y});
             }
         });
     };
 
-    function startDiceRoll() {
-        const db = document.getElementById('dice-box');
-        db.style.display = 'flex';
+    function openDice() {
+        const screen = document.getElementById('dice-screen');
+        screen.style.display = 'flex';
         setTimeout(() => {
-            db.style.display = 'none';
-            const gift = Math.random();
-            if(gift > 0.5) { hp = Math.min(100, hp + 30); } else { /* Speed boost logic */ }
+            screen.style.display = 'none';
+            hp = Math.min(100, hp + 50); // هدية كبيرة
             document.getElementById('hp').innerText = hp;
-        }, 1500);
+        }, 1200);
     }
 
-    function explode(x, y, c) { for(let i=0; i<15; i++) particles.push({x, y, vx: (Math.random()-0.5)*15, vy: (Math.random()-0.5)*15, life: 1, c}); }
+    function explode(x, y, c) { for(let i=0; i<10; i++) particles.push({x, y, vx:(Math.random()-0.5)*10, vy:(Math.random()-0.5)*10, life:1, c}); }
 
     function loop() {
         if(hp <= 0) return;
         
-        // رسم الخلفية السياحية
-        let g = ctx.createLinearGradient(0, 0, 0, canvas.height);
-        g.addColorStop(0, travel[bgIdx].c1); g.addColorStop(1, travel[bgIdx].c2);
-        ctx.fillStyle = g; ctx.fillRect(0,0,canvas.width, canvas.height);
+        // رسم الخلفية الحقيقية
+        ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = 'rgba(0,0,0,0.3)'; // تغميق خفيف باش يبان اللعب
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
         
-        if(ml && px > 0) px -= 10; if(mr && px < canvas.width - 60) px += 10;
+        if(ml && px > 0) px -= 8; if(mr && px < canvas.width - 70) px += 8;
         
-        ctx.font = '60px Arial';
-        ctx.shadowBlur = 15; ctx.shadowColor = '#00d4ff';
-        ctx.fillText('🚀', px, canvas.height - 100); ctx.shadowBlur = 0;
+        ctx.font = '70px Arial';
+        ctx.fillText('🚀', px, canvas.height - 100);
 
         dices.forEach((d, i) => {
-            d.y += 4; ctx.fillText('🎲', d.x, d.y);
-            if(Math.abs(d.x - px) < 60 && d.y > canvas.height - 150) { dices.splice(i, 1); startDiceRoll(); }
+            d.y += 3; ctx.fillText('🎲', d.x, d.y);
+            if(Math.abs(d.x - px) < 70 && d.y > canvas.height - 150) { dices.splice(i,1); openDice(); }
         });
 
         enemies.forEach((en, i) => {
-            en.y += en.s; if(en.z) en.x += Math.sin(en.y/30)*5;
-            ctx.fillText(en.char, en.x, en.y);
-            if(en.char==='👹' && Math.random()>0.98) eBullets.push({x: en.x, y: en.y, c: '🔥', s: 6});
-            if(en.char==='🌩️' && Math.random()>0.98) eBullets.push({x: en.x, y: en.y, c: '⚡', s: 10});
-            if(en.y > canvas.height - 130 && Math.abs(en.x - px) < 55) { hp -= 20; explode(px, canvas.height-100, '#fff'); enemies.splice(i,1); document.getElementById('hp').innerText = hp; if(hp <= 0) location.reload(); }
+            en.y += en.s; ctx.fillText(en.char, en.x, en.y);
+            // وحوش سهلة ما كتضربش بزاف
+            if(en.y > canvas.height - 130 && Math.abs(en.x - px) < 60) {
+                hp -= 10; explode(px, canvas.height-100, '#ff0');
+                enemies.splice(i, 1); document.getElementById('hp').innerText = hp;
+            }
+            if(en.y > canvas.height) enemies.splice(i, 1);
         });
 
-        eBullets.forEach((eb, bi) => {
-            eb.y += eb.s; ctx.fillText(eb.c, eb.x, eb.y);
-            if(Math.abs(eb.x-px)<50 && eb.y > canvas.height-140) { hp -= 10; eBullets.splice(bi,1); document.getElementById('hp').innerText = hp; }
-        });
-
-        particles.forEach((p, i) => { p.x += p.vx; p.y += p.vy; p.life -= 0.02; ctx.fillStyle = p.c; ctx.globalAlpha = p.life; ctx.fillRect(p.x, p.y, 4, 4); if(p.life <= 0) particles.splice(i,1); });
+        particles.forEach((p, i) => { p.x += p.vx; p.y += p.vy; p.life -= 0.03; ctx.fillStyle=p.c; ctx.globalAlpha=p.life; ctx.fillRect(p.x,p.y,5,5); if(p.life<=0) particles.splice(i,1); });
         ctx.globalAlpha = 1;
         requestAnimationFrame(loop);
     }
 
     setInterval(() => {
-        let r = Math.random();
-        enemies.push({x: Math.random()*(canvas.width-100)+50, y: -50, s: 3+Math.random()*4, char: r>0.8?'👹':(r>0.6?'🌩️':(r>0.4?'👽':'🤖')), z: r>0.5});
-    }, 850);
+        // وحوش قليلة وبطيئة للأطفال
+        enemies.push({x: Math.random()*(canvas.width-80)+40, y: -50, s: 2, char: Math.random()>0.5?'👽':'👾'});
+    }, 1500);
+
     loop();
 </script>
 </body>
