@@ -2,92 +2,77 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>Z-Survival Online: نظام الـ 5 لاعبين</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Z-Survival Online</title>
     <style>
-        body { margin: 0; background: #050505; color: white; font-family: 'Segoe UI'; overflow: hidden; text-align: center; }
-        canvas { background: #111; border: 3px solid #ff4d6d; display: block; margin: 20px auto; filter: blur(5px); } /* الغباش حتى تبدأ اللعبة */
+        body { margin: 0; background: #000; overflow: hidden; font-family: sans-serif; color: white; }
+        canvas { display: block; width: 100vw; height: 100vh; background: #111; }
         
-        .lobby-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .player-slot { display: inline-block; width: 50px; height: 50px; border: 2px dashed #555; margin: 10px; border-radius: 50%; line-height: 50px; }
-        .slot-filled { border-style: solid; border-color: #00ffcc; background: #00ffcc; color: black; animation: pulse 1s infinite; }
-        
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
-        #start-btn { display: none; padding: 15px 40px; background: #ff4d6d; color: white; border: none; cursor: pointer; font-size: 20px; font-weight: bold; }
+        /* واجهة كتابة الاسم */
+        .lobby-overlay { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.9); display: flex; flex-direction: column; 
+            align-items: center; justify-content: center; z-index: 2000;
+        }
+
+        #player-name-input {
+            padding: 15px; font-size: 18px; border-radius: 10px; border: 2px solid #ff4444;
+            margin-bottom: 20px; text-align: center; width: 260px; background: #222; color: white;
+        }
+
+        #start-btn {
+            padding: 15px 50px; font-size: 22px; background: #ff4444; 
+            color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: bold;
+        }
+
+        /* أزرار التحكم للموبايل */
+        .controls { position: fixed; bottom: 30px; width: 100%; display: flex; justify-content: space-between; padding: 0 40px; box-sizing: border-box; z-index: 1000; pointer-events: none; }
+        .btn { width: 75px; height: 75px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; pointer-events: auto; user-select: none; border: 1px solid rgba(255,255,255,0.3); }
+        #fire-btn { background: rgba(255,0,0,0.5); width: 100px; height: 100px; border: 2px solid white; }
     </style>
 </head>
 <body>
 
-    <div id="lobby" class="lobby-overlay">
-        <h1>🔍 جاري البحث عن ناجين...</h1>
-        <p>يتم الآن ربطك مع لاعبين آخرين (المطلوب: 5 لاعبين)</p>
-        
-        <div id="slots-container">
-            <div class="player-slot" id="slot1">1</div>
-            <div class="player-slot" id="slot2">2</div>
-            <div class="player-slot" id="slot3">3</div>
-            <div class="player-slot" id="slot4">4</div>
-            <div class="player-slot" id="slot5">5</div>
-        </div>
+<div id="lobby" class="lobby-overlay">
+    <h1 style="color: #ff4444; font-size: 40px; margin-bottom: 10px;">Z-SURVIVAL</h1>
+    <p>ادخل اسمك لبدء المعركة</p>
+    <input type="text" id="player-name-input" placeholder="اكتب اسمك هنا..." maxlength="12">
+    <button id="start-btn">دخول اللعبة</button>
+</div>
 
-        <h2 id="wait-msg">في انتظار اكتمال الفريق... (<span id="count-num">1</span>/5)</h2>
-        <button id="start-btn" onclick="launchGame()">🔥 انطلاق المهمة!</button>
+<div class="controls">
+    <div style="display: grid; grid-template-columns: repeat(3, 70px); gap: 10px;">
+        <div></div><div class="btn" id="up">↑</div><div></div>
+        <div class="btn" id="left">←</div><div></div><div class="btn" id="right">→</div>
+        <div></div><div class="btn" id="down">↓</div><div></div>
     </div>
+    <div class="btn" id="fire-btn">FIRE</div>
+</div>
 
-    <div style="position: absolute; top: 10px; left: 20px; color: #00ffcc;">
-        الفريق: <span id="team-names">أنت</span>
-    </div>
-
-    <canvas id="gameCanvas" width="900" height="550"></canvas>
+<canvas id="gameCanvas"></canvas>
 
 <script>
-    let connectedPlayers = 1;
-    const namesPool = ["ياسين", "سارة", "محمد", "ليلى", "أحمد", "كريم", "نور"];
-    let team = ["أنت (قائد)"];
-
-    // محاكاة دخول لاعبين أونلاين كل ثانيتين
-    let matchMaker = setInterval(() => {
-        if (connectedPlayers < 5) {
-            connectedPlayers++;
-            document.getElementById('slot' + connectedPlayers).classList.add('slot-filled');
-            document.getElementById('slot' + connectedPlayers).innerText = "👤";
-            document.getElementById('count-num').innerText = connectedPlayers;
-            
-            // إضافة اسم عشوائي للفريق
-            let randomName = namesPool[Math.floor(Math.random() * namesPool.length)];
-            team.push(randomName);
-            document.getElementById('team-names').innerText = team.join(" | ");
-        }
-
-        if (connectedPlayers === 5) {
-            clearInterval(matchMaker);
-            document.getElementById('wait-msg').innerHTML = "<span style='color:#00ffcc'>تم اكتمال الفريق! جاهزون للقتال.</span>";
-            document.getElementById('start-btn').style.display = "block";
-        }
-    }, 2000); // كل لاعب يدخل بعد ثانيتين
-
-    function launchGame() {
-        document.getElementById('lobby').style.display = "none";
-        document.getElementById('gameCanvas').style.filter = "none";
-        // هنا تبدأ اللعبة فعلياً
-        alert("بدأت المعركة مع فريقك المكون من 5 لاعبين! احموا الشعب!");
-    }
-
-    // إعدادات الكانفاس الأساسية
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
-    function draw() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = "#333";
-        ctx.fillText("شاشة اللعبة الجماعية - الزومبي قادمون!", 350, 275);
-        requestAnimationFrame(draw);
-    }
-    draw();
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    document.getElementById('start-btn').onclick = function() {
+        const playerName = document.getElementById('player-name-input').value;
+        if (playerName.trim() === "") {
+            alert("أدخل اسمك أولاً يا بطل!");
+            return;
+        }
+        document.getElementById('lobby').style.display = 'none';
+        alert("أهلاً بك يا " + playerName);
+    };
+
+    window.onresize = () => {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    };
 </script>
 </body>
 </html>
-<div id="controls" style="position: fixed; bottom: 20px; left: 20px; display: flex; gap: 20px;">
-    <div id="joystick" style="width: 100px; height: 100px; background: rgba(255,255,255,0.2); border-radius: 50%;">
-        </div>
-    <button id="shootBtn" style="width: 80px; height: 80px; background: red; border-radius: 50%; color: white;">إطلاق</button>
-</div>
+
 
