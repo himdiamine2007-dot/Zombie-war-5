@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>Z-Survival Online: نظام الـ 5 لاعبين</title>
+    <style>
+        body { margin: 0; background: #050505; color: white; font-family: 'Segoe UI'; overflow: hidden; text-align: center; }
+        canvas { background: #111; border: 3px solid #ff4d6d; display: block; margin: 20px auto; filter: blur(5px); } /* الغباش حتى تبدأ اللعبة */
+        
+        .lobby-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .player-slot { display: inline-block; width: 50px; height: 50px; border: 2px dashed #555; margin: 10px; border-radius: 50%; line-height: 50px; }
+        .slot-filled { border-style: solid; border-color: #00ffcc; background: #00ffcc; color: black; animation: pulse 1s infinite; }
+        
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+        #start-btn { display: none; padding: 15px 40px; background: #ff4d6d; color: white; border: none; cursor: pointer; font-size: 20px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div id="lobby" class="lobby-overlay">
+        <h1>🔍 جاري البحث عن ناجين...</h1>
+        <p>يتم الآن ربطك مع لاعبين آخرين (المطلوب: 5 لاعبين)</p>
+        
+        <div id="slots-container">
+            <div class="player-slot" id="slot1">1</div>
+            <div class="player-slot" id="slot2">2</div>
+            <div class="player-slot" id="slot3">3</div>
+            <div class="player-slot" id="slot4">4</div>
+            <div class="player-slot" id="slot5">5</div>
+        </div>
+
+        <h2 id="wait-msg">في انتظار اكتمال الفريق... (<span id="count-num">1</span>/5)</h2>
+        <button id="start-btn" onclick="launchGame()">🔥 انطلاق المهمة!</button>
+    </div>
+
+    <div style="position: absolute; top: 10px; left: 20px; color: #00ffcc;">
+        الفريق: <span id="team-names">أنت</span>
+    </div>
+
+    <canvas id="gameCanvas" width="900" height="550"></canvas>
+
+<script>
+    let connectedPlayers = 1;
+    const namesPool = ["ياسين", "سارة", "محمد", "ليلى", "أحمد", "كريم", "نور"];
+    let team = ["أنت (قائد)"];
+
+    // محاكاة دخول لاعبين أونلاين كل ثانيتين
+    let matchMaker = setInterval(() => {
+        if (connectedPlayers < 5) {
+            connectedPlayers++;
+            document.getElementById('slot' + connectedPlayers).classList.add('slot-filled');
+            document.getElementById('slot' + connectedPlayers).innerText = "👤";
+            document.getElementById('count-num').innerText = connectedPlayers;
+            
+            // إضافة اسم عشوائي للفريق
+            let randomName = namesPool[Math.floor(Math.random() * namesPool.length)];
+            team.push(randomName);
+            document.getElementById('team-names').innerText = team.join(" | ");
+        }
+
+        if (connectedPlayers === 5) {
+            clearInterval(matchMaker);
+            document.getElementById('wait-msg').innerHTML = "<span style='color:#00ffcc'>تم اكتمال الفريق! جاهزون للقتال.</span>";
+            document.getElementById('start-btn').style.display = "block";
+        }
+    }, 2000); // كل لاعب يدخل بعد ثانيتين
+
+    function launchGame() {
+        document.getElementById('lobby').style.display = "none";
+        document.getElementById('gameCanvas').style.filter = "none";
+        // هنا تبدأ اللعبة فعلياً
+        alert("بدأت المعركة مع فريقك المكون من 5 لاعبين! احموا الشعب!");
+    }
+
+    // إعدادات الكانفاس الأساسية
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "#333";
+        ctx.fillText("شاشة اللعبة الجماعية - الزومبي قادمون!", 350, 275);
+        requestAnimationFrame(draw);
+    }
+    draw();
+</script>
+</body>
+</html>
+<div id="controls" style="position: fixed; bottom: 20px; left: 20px; display: flex; gap: 20px;">
+    <div id="joystick" style="width: 100px; height: 100px; background: rgba(255,255,255,0.2); border-radius: 50%;">
+        </div>
+    <button id="shootBtn" style="width: 80px; height: 80px; background: red; border-radius: 50%; color: white;">إطلاق</button>
+</div>
+
