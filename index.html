@@ -1,146 +1,134 @@
+
+
 <!DOCTYPE html>
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Survival Bee - Hardcore Mode</title>
+    <title>Ultimate Survival - Score Challenge</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #1a1a2e; font-family: sans-serif; }
+        body { margin: 0; overflow: hidden; background: #050505; font-family: 'Arial Black', sans-serif; }
         canvas { display: block; }
-        #ui { position: fixed; top: 10px; width: 100%; display: flex; justify-content: space-around; color: white; font-size: 14px; font-weight: bold; text-shadow: 2px 2px #000; pointer-events: none; }
+        
+        /* واجهة الـ Score والـ HP */
+        #ui { 
+            position: fixed; top: 0; width: 100%; height: 60px; 
+            background: rgba(0,0,0,0.6); display: flex; justify-content: space-around; 
+            align-items: center; color: #fff; z-index: 100; border-bottom: 2px solid #ff0000;
+        }
+        .stat { text-align: center; font-size: 16px; }
+        .val { color: #0f0; display: block; font-size: 20px; }
+
+        /* التحكم */
         .controls { position: fixed; bottom: 20px; width: 100%; display: flex; justify-content: space-between; padding: 0 20px; box-sizing: border-box; }
-        .btn { width: 70px; height: 70px; background: rgba(255,255,255,0.2); border: 3px solid #fff; border-radius: 50%; font-size: 30px; display: flex; align-items: center; justify-content: center; touch-action: none; }
-        #fire-btn { background: rgba(255, 0, 0, 0.5); width: 85px; height: 85px; }
-        #reload-bar { position: fixed; bottom: 120px; left: 50%; transform: translateX(-50%); width: 200px; height: 10px; background: #333; border: 1px solid #fff; display: none; }
-        #reload-progress { width: 0%; height: 100%; background: #0f0; }
-        #ammo-count { position: fixed; bottom: 135px; left: 50%; transform: translateX(-50%); color: #fff; font-weight: bold; }
+        .btn { width: 80px; height: 80px; background: rgba(255,255,255,0.1); border: 3px solid #fff; border-radius: 50%; font-size: 35px; display: flex; align-items: center; justify-content: center; touch-action: none; }
+        #fire-btn { background: rgba(255, 0, 0, 0.4); border-color: #ff4444; }
+
+        /* شريط التعبئة */
+        #reload-box { position: fixed; bottom: 120px; left: 50%; transform: translateX(-50%); width: 70%; height: 15px; background: #222; border: 1px solid #fff; display: none; }
+        #reload-fill { width: 0%; height: 100%; background: #f00; }
+        #ammo-txt { position: fixed; bottom: 140px; width: 100%; text-align: center; color: #fff; font-weight: bold; }
     </style>
 </head>
 <body>
-    <div id="ui">
-        <div>💰: <span id="coins">0</span></div>
-        <div>⏱️ نجاة: <span id="timer">0</span>s</div>
-        <div>❤️: <span id="hp">100</span>%</div>
+
+<div id="ui">
+    <div class="stat">🏆 السكور (نجاة)<span class="val" id="score">0</span></div>
+    <div class="stat">💰 كوينز<span class="val" id="coins">0</span></div>
+    <div class="stat">❤️ الصحة<span class="val" id="hp">100%</span></div>
+</div>
+
+<div id="ammo-txt">الذخيرة: 10/10</div>
+<div id="reload-box"><div id="reload-fill"></div></div>
+
+<div class="controls">
+    <div style="display:flex; gap:15px;">
+        <div class="btn" id="l">⬅️</div>
+        <div class="btn" id="r">➡️</div>
     </div>
+    <div class="btn" id="fire-btn">🔥</div>
+</div>
 
-    <div id="ammo-count">الذخيرة: 10/10</div>
-    <div id="reload-bar"><div id="reload-progress"></div></div>
+<canvas id="c"></canvas>
 
-    <div class="controls">
-        <div style="display:flex; gap:10px;">
-            <div class="btn" id="l">⬅️</div>
-            <div class="btn" id="r">➡️</div>
-        </div>
-        <div class="btn" id="fire-btn">🔥</div>
-    </div>
-    <canvas id="c"></canvas>
+<script>
+    const canvas = document.getElementById('c'), ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
 
-    <script>
-        const canvas = document.getElementById('c'), ctx = canvas.getContext('2d');
-        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+    let score = 0, coins = 0, hp = 100, ammo = 10, reloading = false;
+    let px = canvas.width/2-30, items = [], bullets = [], ml = false, mr = false;
 
-        let coins = 0, ammo = 10, reloading = false, survivalTime = 0, hp = 100;
-        let px = canvas.width/2-30, skin = '🐝';
-        let items = [], bullets = [], pBullets = [], ml = false, mr = false;
+    // السكور كيتحسب بالثواني
+    setInterval(() => { if(hp > 0) { score++; document.getElementById('score').innerText = score; } }, 1000);
 
-        // عداد النجاة
-        setInterval(() => { if(hp > 0) survivalTime++; document.getElementById('timer').innerText = survivalTime; }, 1000);
+    document.getElementById('l').ontouchstart = (e) => { e.preventDefault(); ml = true; };
+    document.getElementById('l').ontouchend = () => ml = false;
+    document.getElementById('r').ontouchstart = (e) => { e.preventDefault(); mr = true; };
+    document.getElementById('r').ontouchend = () => mr = false;
 
-        document.getElementById('l').ontouchstart = (e) => { e.preventDefault(); ml = true; };
-        document.getElementById('l').ontouchend = () => ml = false;
-        document.getElementById('r').ontouchstart = (e) => { e.preventDefault(); mr = true; };
-        document.getElementById('r').ontouchend = () => mr = false;
-
-        document.getElementById('fire-btn').ontouchstart = (e) => {
-            e.preventDefault();
-            if(ammo > 0 && !reloading) {
-                pBullets.push({x: px + 25, y: canvas.height - 150});
-                ammo--;
-                updateAmmoUI();
-                if(ammo === 0) startReload();
-            }
-        };
-
-        function updateAmmoUI() {
-            document.getElementById('ammo-count').innerText = `الذخيرة: ${ammo}/10`;
+    document.getElementById('fire-btn').ontouchstart = (e) => {
+        e.preventDefault();
+        if(ammo > 0 && !reloading) {
+            ammo--; updateAmmo();
+            // النار دابا مكتقتلش، غير كتدفع الوحوش الفوق (دفاع)
+            items.forEach(it => { if(it.bad && Math.abs(it.x - px) < 100) it.y -= 100; });
+            if(ammo === 0) startReload();
         }
+    };
 
-        function startReload() {
-            reloading = true;
-            let bar = document.getElementById('reload-bar');
-            let progress = document.getElementById('reload-progress');
-            bar.style.display = 'block';
-            let width = 0;
-            let interval = setInterval(() => {
-                width += (100 / 600); // 60 ثانية
-                progress.style.width = width + '%';
-                if(width >= 100) {
-                    clearInterval(interval);
-                    ammo = 10;
-                    reloading = false;
-                    bar.style.display = 'none';
-                    updateAmmoUI();
-                }
-            }, 100);
-        }
+    function updateAmmo() { document.getElementById('ammo-txt').innerText = `الذخيرة: ${ammo}/10`; }
 
-        function loop() {
-            if(hp <= 0) return;
-            ctx.fillStyle = '#1a1a2e'; ctx.fillRect(0,0,canvas.width, canvas.height);
+    function startReload() {
+        reloading = true;
+        document.getElementById('reload-box').style.display = 'block';
+        let w = 0;
+        let inv = setInterval(() => {
+            w += 0.16; // تقريبا 60 ثانية
+            document.getElementById('reload-fill').style.width = w + '%';
+            if(w >= 100) { clearInterval(inv); ammo = 10; reloading = false; document.getElementById('reload-box').style.display = 'none'; updateAmmo(); }
+        }, 100);
+    }
+
+    function loop() {
+        if(hp <= 0) return;
+        ctx.fillStyle = '#050505'; ctx.fillRect(0,0,canvas.width, canvas.height);
+        
+        if(ml && px > 0) px -= 8; if(mr && px < canvas.width - 60) px += 8;
+        ctx.font = '55px Arial'; ctx.fillText('🐝', px, canvas.height - 100);
+
+        items.forEach((it, i) => {
+            it.y += it.s; ctx.fillText(it.char, it.x, it.y);
             
-            if(ml && px > 0) px -= 7; if(mr && px < canvas.width - 60) px += 7;
-            ctx.font = '50px Arial'; ctx.fillText(skin, px, canvas.height - 100);
+            // الوحوش كيرميو النار
+            if(it.bad && Math.random() > 0.985) bullets.push({x: it.x+15, y: it.y+20});
 
-            // رصاص اللاعب
-            pBullets.forEach((pb, pbi) => {
-                pb.y -= 10; ctx.fillText('⚡', pb.x, pb.y);
-                items.forEach((it, i) => {
-                    if(it.bad && Math.abs(pb.x - it.x) < 40 && Math.abs(pb.y - it.y) < 40) {
-                        items.splice(i, 1); pBullets.splice(pbi, 1);
-                        coins += 5; document.getElementById('coins').innerText = coins;
-                    }
-                });
-            });
+            if(it.y > canvas.height - 140 && it.y < canvas.height - 70 && Math.abs(it.x - px) < 50) {
+                if(it.bad) { hp -= 25; items.splice(i,1); }
+                else { coins += 1; items.splice(i,1); }
+                document.getElementById('hp').innerText = hp + '%';
+                document.getElementById('coins').innerText = coins;
+                if(hp <= 0) { alert("خسرتي! السكور ديالك: " + score); location.reload(); }
+            }
+            if(it.y > canvas.height) items.splice(i, 1);
+        });
 
-            // الوحوش والأشياء
-            items.forEach((it, i) => {
-                it.y += it.s; 
-                if(it.type === 'ghost') it.x += Math.sin(it.y/20)*5; // حرك الشبح
-                ctx.fillText(it.char, it.x, it.y);
+        bullets.forEach((b, bi) => {
+            b.y += 6; ctx.fillText('🔴', b.x, b.y);
+            if(Math.abs(b.x - px) < 40 && Math.abs(b.y - (canvas.height-100)) < 40) { hp -= 10; bullets.splice(bi,1); document.getElementById('hp').innerText = hp + '%'; }
+            if(b.y > canvas.height) bullets.splice(bi, 1);
+        });
 
-                if(it.bad && Math.random() > 0.98) bullets.push({x: it.x+15, y: it.y+20, s: 5});
+        requestAnimationFrame(loop);
+    }
 
-                if(it.y > canvas.height - 130 && it.y < canvas.height - 70 && Math.abs(it.x - px) < 50) {
-                    if(it.bad) { hp -= 20; items.splice(i,1); }
-                    else { coins += 1; items.splice(i,1); }
-                    document.getElementById('coins').innerText = coins;
-                    document.getElementById('hp').innerText = hp;
-                    if(hp <= 0) { alert("انتهت اللعبة! صمدت لـ " + survivalTime + " ثانية"); location.reload(); }
-                }
-                if(it.y > canvas.height) items.splice(i, 1);
-            });
+    setInterval(() => {
+        let r = Math.random();
+        let type = r > 0.7 ? {char:'👾', s:4, bad:true} : (r > 0.4 ? {char:'👹', s:2, bad:true} : {char:'🌸', s:3, bad:false});
+        items.push({x: Math.random()*(canvas.width-50), y: -50, ...type});
+    }, 800);
 
-            bullets.forEach((b, bi) => {
-                b.y += b.s; ctx.fillText('🔥', b.x, b.y);
-                if(Math.abs(b.x - px) < 40 && Math.abs(b.y - (canvas.height-100)) < 40) { hp -= 10; bullets.splice(bi,1); document.getElementById('hp').innerText = hp; }
-            });
-
-            requestAnimationFrame(loop);
-        }
-
-        setInterval(() => {
-            let r = Math.random();
-            let type;
-            if(r > 0.8) type = {char:'👾', s:3, bad:true, type:'normal'};
-            else if(r > 0.6) type = {char:'👻', s:5, bad:true, type:'ghost'};
-            else if(r > 0.5) type = {char:'👹', s:2, bad:true, type:'giant'};
-            else type = {char:'🌸', s:3, bad:false, type:'coin'};
-            items.push({x: Math.random()*(canvas.width-50), y: -50, ...type});
-        }, 900);
-
-        loop();
-    </script>
+    loop();
+</script>
 </body>
 </html>
-
 
 
