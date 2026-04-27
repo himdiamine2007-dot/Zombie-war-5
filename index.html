@@ -2,50 +2,43 @@
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Alien Strike - Modern Warfare 2026</title>
+    <title>Survival Mega Pro 2026</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #020205; font-family: 'SF Pro Display', sans-serif; touch-action: none; color: white; }
+        body { margin: 0; overflow: hidden; background: #000; font-family: 'Segoe UI', sans-serif; touch-action: none; color: white; }
         canvas { display: block; filter: drop-shadow(0 0 10px rgba(0, 212, 255, 0.4)); }
-        
-        /* تصميم HUD عصري */
-        #ui { position: fixed; top: 15px; width: 100%; display: flex; justify-content: space-around; font-size: 16px; font-weight: 800; text-shadow: 0 0 10px #00d4ff; z-index: 10; pointer-events: none; text-transform: uppercase; letter-spacing: 1px; }
-        .val { color: #00d4ff; font-weight: 900; font-size: 20px; }
-        
-        /* التحكم */
-        .controls { position: fixed; bottom: 30px; width: 100%; display: flex; justify-content: space-around; z-index: 10; padding: 0 10px; box-sizing: border-box; }
-        .btn { width: 85px; height: 85px; background: rgba(0, 212, 255, 0.08); border: 2px solid rgba(0, 212, 255, 0.5); border-radius: 20px; font-size: 35px; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(5px); box-shadow: 0 0 15px rgba(0, 212, 255, 0.2); transition: all 0.1s; }
-        .btn:active { transform: scale(0.9); background: rgba(0, 212, 255, 0.2); }
-        #fire-btn { background: rgba(255, 0, 0, 0.15); border-color: rgba(255, 0, 0, 0.6); box-shadow: 0 0 20px rgba(255, 0, 0, 0.3); }
-        #fire-btn:active { background: rgba(255, 0, 0, 0.3); }
-
-        /* شريط التعبئة */
-        #reload-box { position: fixed; bottom: 135px; left: 50%; transform: translateX(-50%); width: 60%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 10px; display: none; overflow: hidden; }
-        #reload-fill { width: 0%; height: 100%; background: linear-gradient(90deg, #ff4444, #ff0000); box-shadow: 0 0 15px #f00; }
-        
-        /* واجهة المتجر */
-        #shop-menu { display: none; position: fixed; inset: 50px 20px; background: rgba(5,5,15,0.95); border: 2px solid #00d4ff; border-radius: 20px; color: white; padding: 20px; z-index: 100; text-align: center; backdrop-filter: blur(10px); }
-        #shop-btn { position: fixed; top: 50px; right: 15px; background: rgba(255, 215, 0, 0.3); border: 1px solid #ffd700; color: #ffd700; padding: 5px 10px; border-radius: 8px; font-weight: bold; z-index: 20; text-shadow: 0 0 5px #ffd700; }
+        #ui { position: fixed; top: 10px; width: 100%; display: flex; justify-content: space-around; font-size: 15px; font-weight: 800; text-shadow: 0 0 10px #00d4ff; z-index: 10; pointer-events: none; text-transform: uppercase; }
+        .val { color: #00d4ff; font-weight: 900; font-size: 18px; }
+        #loc { position: fixed; top: 40px; width: 100%; text-align: center; color: #FFD700; font-weight: bold; font-size: 14px; text-shadow: 0 0 5px #000; z-index: 10; }
+        .controls { position: fixed; bottom: 25px; width: 100%; display: flex; justify-content: space-around; z-index: 10; }
+        .btn { width: 75px; height: 75px; background: rgba(0, 212, 255, 0.1); border: 2px solid rgba(0, 212, 255, 0.5); border-radius: 20px; font-size: 30px; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
+        #fire-btn { background: rgba(255, 0, 0, 0.2); border-color: #ff4444; box-shadow: 0 0 15px #f00; }
+        #shop-btn { position: fixed; top: 60px; right: 10px; background: rgba(255, 215, 0, 0.4); border: 1px solid #ffd700; color: #ffd700; padding: 5px 12px; border-radius: 10px; font-weight: bold; z-index: 20; }
+        #shop-menu { display: none; position: fixed; inset: 50px 20px; background: rgba(0,0,0,0.95); border: 2px solid #00d4ff; border-radius: 20px; color: white; padding: 20px; z-index: 100; text-align: center; }
+        #reload-box { position: fixed; bottom: 120px; left: 50%; transform: translateX(-50%); width: 60%; height: 6px; background: #111; border-radius: 10px; display: none; overflow: hidden; }
+        #reload-fill { width: 0%; height: 100%; background: #f00; box-shadow: 0 0 10px #f00; }
+        #pwr { position: fixed; top: 80px; width: 100%; text-align: center; color: #0f0; font-weight: bold; font-size: 20px; display: none; }
     </style>
 </head>
 <body>
 
 <div id="ui">
-    <div>🏆 SCORE<span class="val" id="score">0</span></div>
-    <div>💎<span class="val" id="coins">0</span></div>
-    <div>❤️<span class="val" id="hp">100</span>%</div>
+    <div>⏱️: <span class="val" id="timer">0</span>s</div>
+    <div>💎: <span class="val" id="coins">0</span></div>
+    <div>❤️: <span class="val" id="hp">100</span>%</div>
 </div>
-<div id="shop-btn" onclick="toggleShop()">🛒 المتجر</div>
+<div id="loc">🏙️ باريس 🗼</div>
+<div id="shop-btn" onclick="toggleShop()">🛒 SHOP</div>
+<div id="pwr"></div>
+<div id="reload-box"><div id="reload-fill"></div></div>
 
 <div id="shop-menu">
-    <h2>🏪 SPACE SHOP</h2>
-    <p>COINS: <span id="shop-coins" class="val">0</span>💎</p>
+    <h2>🏪 GALAXY STORE</h2>
+    <p>BALANCE: <span id="s-coins" class="val">0</span>💎</p>
     <button onclick="buy('🚀', 0)">🚀 DEFAULT</button><br><br>
-    <button onclick="buy('🛸', 50)">🛸 ALIEN SHIP (50💎)</button><br><br>
+    <button onclick="buy('🛸', 50)">🛸 UFO (50💎)</button><br><br>
     <button onclick="buy('🐉', 100)">🐉 DRAGON (100💎)</button><br><br>
     <button onclick="toggleShop()">CLOSE</button>
 </div>
-
-<div id="reload-box"><div id="reload-fill"></div></div>
 
 <div class="controls">
     <div style="display:flex; gap:15px;">
@@ -61,62 +54,84 @@
     const canvas = document.getElementById('c'), ctx = canvas.getContext('2d');
     canvas.width = window.innerWidth; canvas.height = window.innerHeight;
 
-    let score = 0, coins = 0, hp = 100, ammo = 10, reloading = false;
-    let px = canvas.width/2-30, skin = '🚀', enemies = [], items = [], particles = [], dices = [], pBullets = [];
-    let ml = false, mr = false, shopOpen = false;
+    let score = 0, coins = 0, hp = 100, ammo = 10, reloading = false, survivalTime = 0;
+    let px = canvas.width/2-30, skin = '🚀', playerSpeed = 9;
+    let enemies = [], eBullets = [], particles = [], dices = [], ml = false, mr = false, shopOpen = false;
+    let powerActive = false, powerType = '';
 
-    setInterval(() => { if(hp > 0 && !shopOpen) { score++; document.getElementById('score').innerText = score; } }, 1000);
+    const bgs = [{n: 'باريس 🗼', g: ['#1a2a6c', '#b21f1f']}, {n: 'دبي 🏙️', g: ['#ff8c00', '#ffd700']}, {n: 'طوكيو ⛩️', g: ['#4b0082', '#ff69b4']}, {n: 'مصر 🏜️', g: ['#daa520', '#333']}];
+    let bgIdx = 0;
 
-    // تحكم الأزرار
+    setInterval(() => { if(hp > 0 && !shopOpen) { survivalTime++; document.getElementById('timer').innerText = survivalTime; } }, 1000);
+
+    function toggleShop() { shopOpen = !shopOpen; document.getElementById('shop-menu').style.display = shopOpen?'block':'none'; document.getElementById('s-coins').innerText = coins; }
+    function buy(s, p) { if(coins >= p) { skin = s; coins -= p; document.getElementById('coins').innerText = coins; toggleShop(); } else alert("NO MONEY!"); }
+
     const setupBtn = (id, action) => { const btn = document.getElementById(id); btn.ontouchstart = (e) => { e.preventDefault(); action(true); }; btn.ontouchend = () => action(false); };
     setupBtn('l', v => ml = v); setupBtn('r', v => mr = v);
-    document.getElementById('fire-btn').ontouchstart = (e) => { e.preventDefault(); if(ammo > 0 && !reloading && !shopOpen) { pBullets.push({x: px+25, y: canvas.height-120}); ammo--; if(ammo === 0) startReload(); } };
 
-    function toggleShop() { shopOpen = !shopOpen; document.getElementById('shop-menu').style.display = shopOpen?'block':'none'; document.getElementById('shop-coins').innerText = coins; }
-    function buy(s, p) { if(coins >= p) { skin = s; coins -= p; document.getElementById('coins').innerText = coins; toggleShop(); } else alert("NOT ENOUGH COINS!"); }
-
-    function startReload() { reloading = true; document.getElementById('reload-box').style.display = 'block'; let w = 0; let inv = setInterval(() => { w += 0.16; document.getElementById('reload-fill').style.width = w + '%'; if(w >= 100) { clearInterval(inv); ammo = 10; reloading = false; document.getElementById('reload-box').style.display = 'none'; } }, 100); }
-
-    function explode(x, y, color) { for(let i=0; i<12; i++) particles.push({x, y, vx: (Math.random()-0.5)*12, vy: (Math.random()-0.5)*12, life: 1, c: color}); }
-
-    function loop() {
-        if(hp <= 0) return;
-        ctx.fillStyle = 'rgba(2, 2, 5, 0.4)'; ctx.fillRect(0,0,canvas.width, canvas.height);
-        
-        if(ml && px > 0) px -= 9; if(mr && px < canvas.width - 60) px += 9;
-        ctx.font = '55px Arial'; ctx.fillText(skin, px, canvas.height - 100);
-
-        // ليزر اللاعب
-        pBullets.forEach((pb, pbi) => {
-            pb.y -= 15; ctx.fillStyle = '#00d4ff'; ctx.fillRect(pb.x, pb.y, 4, 20);
-            enemies.forEach((en, ei) => {
-                if(Math.abs(pb.x - en.x) < 55 && Math.abs(pb.y - en.y) < 55) {
-                    explode(en.x, en.y, '#ff4444');
-                    enemies.splice(ei, 1); pBullets.splice(pbi, 1);
-                    coins += 5; document.getElementById('coins').innerText = coins;
+    document.getElementById('fire-btn').ontouchstart = (e) => {
+        e.preventDefault();
+        if(ammo > 0 && !reloading && !shopOpen) {
+            enemies.forEach((en, i) => {
+                if(Math.abs(en.x - px) < 130) {
+                    explode(en.x, en.y, en.char==='👹'?'#ff4444':'#00d4ff');
+                    enemies.splice(i, 1); coins += 5;
+                    document.getElementById('coins').innerText = coins;
+                    if(coins % 15 === 0 && bgIdx < bgs.length-1) { bgIdx++; document.getElementById('loc').innerText = bgs[bgIdx].n; }
                     if(Math.random() > 0.8) dices.push({x: en.x, y: en.y});
                 }
             });
-            if(pb.y < 0) pBullets.splice(pbi, 1);
+            ammo--; if(ammo === 0) startReload();
+        }
+    };
+
+    function startReload() { reloading = true; document.getElementById('reload-box').style.display = 'block'; let w = 0; let inv = setInterval(() => { w += 0.16; document.getElementById('reload-fill').style.width = w + '%'; if(w >= 100) { clearInterval(inv); ammo = 10; reloading = false; document.getElementById('reload-box').style.display = 'none'; } }, 100); }
+    function explode(x, y, c) { for(let i=0; i<10; i++) particles.push({x, y, vx: (Math.random()-0.5)*10, vy: (Math.random()-0.5)*10, life: 1, c}); }
+
+    function activatePower() {
+        const t = ['🛡️ SHIELD', '⚡ SPEED', '❤️ HEALTH'];
+        powerType = t[Math.floor(Math.random()*t.length)];
+        powerActive = true;
+        const txt = document.getElementById('pwr');
+        txt.innerText = powerType; txt.style.display = 'block';
+        if(powerType === '⚡ SPEED') playerSpeed = 16;
+        if(powerType === '❤️ HEALTH') { hp = Math.min(100, hp+25); document.getElementById('hp').innerText = hp; }
+        setTimeout(() => { powerActive = false; playerSpeed = 9; txt.style.display = 'none'; }, 10000);
+    }
+
+    function loop() {
+        if(hp <= 0 || shopOpen) return requestAnimationFrame(loop);
+        let grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+        grad.addColorStop(0, bgs[bgIdx].g[0]); grad.addColorStop(1, bgs[bgIdx].g[1]);
+        ctx.fillStyle = grad; ctx.fillRect(0,0,canvas.width, canvas.height);
+        
+        if(ml && px > 0) px -= playerSpeed; if(mr && px < canvas.width - 60) px += playerSpeed;
+        if(powerActive && powerType === '🛡️ SHIELD') { ctx.beginPath(); ctx.arc(px+30, canvas.height-85, 55, 0, 7); ctx.strokeStyle = '#0ff'; ctx.lineWidth = 3; ctx.stroke(); }
+        
+        ctx.font = '55px Arial'; ctx.fillText(skin, px, canvas.height - 100);
+
+        enemies.forEach((en, i) => {
+            en.y += en.s; if(en.z) en.x += Math.sin(en.y/30)*4;
+            ctx.fillText(en.char, en.x, en.y);
+            if(en.char==='👹' && Math.random()>0.98) eBullets.push({x: en.x, y: en.y, c: '🔥', s: 5});
+            if(en.char==='🌩️' && Math.random()>0.98) eBullets.push({x: en.x, y: en.y, c: '⚡', s: 8});
+            if(en.y > canvas.height - 130 && Math.abs(en.x - px) < 50) { if(!powerActive || powerType !== '🛡️ SHIELD') hp -= 20; enemies.splice(i,1); document.getElementById('hp').innerText = hp; if(hp <= 0) { alert("GAME OVER! SCORE: " + survivalTime); location.reload(); } }
         });
 
-        // الوحوش
-        enemies.forEach((en, i) => { en.y += en.s; ctx.fillText(en.char, en.x, en.y); if(en.y > canvas.height - 130 && Math.abs(en.x - px) < 50) { explode(px, canvas.height-100, '#fff'); hp -= 20; enemies.splice(i,1); document.getElementById('hp').innerText = hp; if(hp <= 0) { alert("GAME OVER! SCORE: " + score); location.reload(); } } if(en.y > canvas.height) enemies.splice(i,1); });
+        eBullets.forEach((eb, bi) => { eb.y += eb.s; ctx.fillText(eb.c, eb.x, eb.y); if(Math.abs(eb.x-px)<45 && eb.y>canvas.height-140) { if(!powerActive || powerType !== '🛡️ SHIELD') hp -= 10; eBullets.splice(bi,1); document.getElementById('hp').innerText = hp; } });
 
-        // تأثيرات الانفجار
+        dices.forEach((d, i) => { d.y += 4; ctx.fillText('🎲', d.x, d.y); if(Math.abs(d.x - px) < 50 && d.y > canvas.height - 150) { activatePower(); dices.splice(i,1); } });
+
         particles.forEach((p, i) => { p.x += p.vx; p.y += p.vy; p.life -= 0.03; ctx.fillStyle = p.c; ctx.globalAlpha = p.life; ctx.fillRect(p.x, p.y, 3, 3); if(p.life <= 0) particles.splice(i, 1); });
         ctx.globalAlpha = 1;
-
-        // الأشياء (النرد والماس)
-        dices.forEach((d, i) => { d.y += 4; ctx.fillText('🎲', d.x, d.y); if(Math.abs(d.x - px) < 50 && d.y > canvas.height - 150) { hp = Math.min(100, hp+20); document.getElementById('hp').innerText = hp; dices.splice(i,1); } });
-        items.forEach((it, i) => { it.y += 4; ctx.fillText('💎', it.x, it.y); if(Math.abs(it.x - px) < 50 && it.y > canvas.height - 150) { coins += 1; document.getElementById('coins').innerText = coins; items.splice(i,1); } });
-
         requestAnimationFrame(loop);
     }
 
-    setInterval(() => { if(!shopOpen) { let r = Math.random(); if(r > 0.4) enemies.push({x: Math.random()*(canvas.width-50), y: -50, s: 3+Math.random()*4, char: r>0.7?'👽':'🤖'}); else items.push({x: Math.random()*(canvas.width-50), y: -50}); } }, 850);
+    setInterval(() => { if(!shopOpen) { let r = Math.random(); enemies.push({x: Math.random()*(canvas.width-50), y: -50, s: 3+Math.random()*3, char: r>0.8?'👹':(r>0.6?'🌩️':(r>0.4?'👽':'🤖')), z: r>0.5}); } }, 900);
     loop();
 </script>
 </body>
 </html>
+
 
