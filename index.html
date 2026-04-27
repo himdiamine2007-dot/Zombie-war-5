@@ -1,55 +1,43 @@
-
 <!DOCTYPE html>
 <html lang="ar">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Z-Survival: FF Edition</title>
+    <title>Z-Survival: FF Style</title>
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; font-family: sans-serif; }
-        canvas { display: block; width: 100vw; height: 100vh; background: radial-gradient(circle, #1a2a3a 0%, #000 100%); }
+        canvas { display: block; width: 100vw; height: 100vh; background: radial-gradient(circle, #1a202c 0%, #000 100%); }
+        .hud { position: fixed; top: 10px; left: 10px; color: #f1c40f; font-weight: bold; z-index: 10; font-family: monospace; }
         
-        /* HUD المعلومات */
-        .hud { position: fixed; top: 15px; left: 15px; color: #fff; z-index: 1500; font-weight: bold; pointer-events: none; text-shadow: 2px 2px #000; }
-
-        /* الأزرار الاحترافية (صغيرة وشفافة) */
-        .controls { position: fixed; width: 100%; height: 100%; top: 0; left: 0; pointer-events: none; z-index: 1000; }
-        .btn { width: 55px; height: 55px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; pointer-events: auto; touch-action: none; font-size: 14px; }
-        .btn:active { background: rgba(255,255,255,0.3); }
-
-        .d-pad { position: absolute; bottom: 25px; left: 30px; display: grid; grid-template-columns: repeat(3, 60px); gap: 5px; }
-        #fire-btn { position: absolute; bottom: 40px; right: 40px; width: 95px; height: 95px; background: rgba(255,0,0,0.3); border: 2px solid #ff4444; font-weight: bold; font-size: 18px; }
+        /* أزرار التحكم - تصميم قتالي شفاف */
+        .controls { position: fixed; width: 100%; height: 100%; top: 0; left: 0; pointer-events: none; z-index: 5; }
+        .btn { width: 55px; height: 55px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; pointer-events: auto; touch-action: none; }
+        .d-pad { position: absolute; bottom: 20px; left: 20px; display: grid; grid-template-columns: repeat(3, 60px); gap: 5px; }
+        #fire-btn { position: absolute; bottom: 30px; right: 30px; width: 90px; height: 90px; background: rgba(231, 76, 60, 0.4); border: 2px solid #e74c3c; font-weight: bold; }
+        #run-btn { position: absolute; bottom: 180px; left: 70px; background: rgba(46, 204, 113, 0.3); }
         
-        #run-btn { position: absolute; bottom: 190px; left: 75px; background: rgba(0,255,0,0.2); border-color: #0f0; }
-        #crouch-btn { position: absolute; bottom: 45px; right: 150px; background: rgba(255,255,0,0.1); }
-
-        /* واجهة البداية */
-        .lobby { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 2000; color: white; }
-        input { padding: 12px; border-radius: 20px; border: 2px solid #ff4444; background: #111; color: white; width: 250px; text-align: center; margin-bottom: 20px; }
-        button#start { padding: 12px 50px; background: #ff4444; color: white; border: none; border-radius: 20px; font-weight: bold; font-size: 18px; }
+        .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 20; color: white; }
+        input { padding: 10px; border-radius: 20px; border: 2px solid #f1c40f; background: #111; color: white; margin-bottom: 20px; text-align: center; }
+        button { padding: 10px 40px; background: #f1c40f; color: #000; border: none; border-radius: 20px; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<div class="hud">
-    👤 المقاتل: <span id="h-name">-</span><br>
-    🏆 المستوى: <span id="h-lvl">1</span> | 💰: <span id="h-cash">0</span>
-</div>
+<div class="hud">👤: <span id="n">...</span> | 🏆: <span id="l">1</span> | 💰: <span id="c">0</span></div>
 
-<div id="lobby" class="lobby">
-    <h1 style="color: #ff4444; font-size: 40px;">BATTLEGROUND Z</h1>
-    <input type="text" id="p-input" placeholder="اكتب اسمك الحقيقي...">
-    <button id="start">START MISSION</button>
+<div id="start-screen" class="overlay">
+    <h1 style="color:#f1c40f">BATTLEGROUND Z</h1>
+    <input type="text" id="name-in" placeholder="اكتب اسمك...">
+    <button onclick="startGame()">START GAME</button>
 </div>
 
 <div class="controls">
-    <div class="btn" id="run-btn">RUN</div>
+    <div class="btn" id="run-btn">🏃</div>
     <div class="d-pad">
         <div></div><div class="btn" id="u">↑</div><div></div>
-        <div class="btn" id="l">←</div><div></div><div class="btn" id="r">→</div>
+        <div class="btn" id="l-btn">←</div><div></div><div class="btn" id="r-btn">→</div>
         <div></div><div class="btn" id="d">↓</div><div></div>
     </div>
-    <div class="btn" id="crouch-btn">SIT</div>
     <div class="btn" id="fire-btn">FIRE</div>
 </div>
 
@@ -60,91 +48,79 @@
     const ctx = canvas.getContext('2d');
     canvas.width = window.innerWidth; canvas.height = window.innerHeight;
 
-    let playing = false; let cash = 0; let lvl = 1; let pName = "";
-    const player = { x: canvas.width/2, y: canvas.height/2, r: 20, speed: 5, color: '#00ffcc' };
+    let active = false; let score = 0; let level = 1; let pName = "";
+    const player = { x: canvas.width/2, y: canvas.height/2, r: 20, speed: 5, color: '#f1c40f' };
     const bullets = []; const enemies = []; const keys = {};
 
-    const bind = (id, k) => {
+    const setupBtn = (id, k) => {
         const el = document.getElementById(id);
         el.ontouchstart = (e) => { e.preventDefault(); keys[k] = true; };
         el.ontouchend = () => keys[k] = false;
     };
-    bind('u','u'); bind('d','d'); bind('l','l'); bind('r','r');
+    setupBtn('u','u'); setupBtn('d','d'); setupBtn('l-btn','l'); setupBtn('r-btn','r');
 
     document.getElementById('run-btn').ontouchstart = (e) => { e.preventDefault(); player.speed = 10; };
     document.getElementById('run-btn').ontouchend = () => player.speed = 5;
-
-    document.getElementById('crouch-btn').ontouchstart = (e) => { e.preventDefault(); player.r = 12; player.speed = 2; };
-    document.getElementById('crouch-btn').ontouchend = () => { player.r = 20; player.speed = 5; };
 
     document.getElementById('fire-btn').ontouchstart = (e) => {
         e.preventDefault();
         bullets.push({ x: player.x, y: player.y, v: 12 });
     };
 
-    document.getElementById('start').onclick = () => {
-        pName = document.getElementById('p-input').value || "Soldier";
-        document.getElementById('h-name').innerText = pName;
-        document.getElementById('lobby').style.display = 'none';
-        playing = true; spawn(); update();
-    };
-
-    function spawn() {
-        if(!playing) return;
-        let isB = (lvl % 3 === 0 && enemies.filter(e=>e.b).length === 0);
-        enemies.push({
-            x: Math.random()*canvas.width, y: -50,
-            b: isB, hp: isB ? 20*lvl : 2*lvl, max: isB ? 20*lvl : 2*lvl,
-            r: isB ? 50 : 18
-        });
-        setTimeout(spawn, 2500/lvl);
+    function startGame() {
+        pName = document.getElementById('name-in').value || "Warrior";
+        document.getElementById('n').innerText = pName;
+        document.getElementById('start-screen').style.display = 'none';
+        active = true; spawn(); draw();
     }
 
-    function update() {
-        if(!playing) return;
+    function spawn() {
+        if(!active) return;
+        let isBoss = (level % 3 === 0 && enemies.filter(e=>e.b).length === 0);
+        enemies.push({ x: Math.random()*canvas.width, y: -50, b: isBoss, hp: isBoss ? 20 : 2, r: isBoss ? 50 : 20 });
+        setTimeout(spawn, 2000/level);
+    }
+
+    function draw() {
+        if(!active) return;
         ctx.clearRect(0,0,canvas.width, canvas.height);
 
         if(keys.u) player.y -= player.speed; if(keys.d) player.y += player.speed;
         if(keys.l) player.x -= player.speed; if(keys.r) player.x += player.speed;
 
-        // رسم اللاعب كشخصية دائرية (PRO)
+        // رسم اللاعب (دائرة قتالية)
         ctx.beginPath(); ctx.arc(player.x, player.y, player.r, 0, Math.PI*2);
         ctx.fillStyle = player.color; ctx.fill();
-        ctx.strokeStyle = "#fff"; ctx.lineWidth = 2; ctx.stroke();
-        ctx.fillStyle = "white"; ctx.fillText(pName, player.x-20, player.y-30);
+        ctx.strokeStyle = "#fff"; ctx.stroke();
+        ctx.fillStyle = "#fff"; ctx.fillText(pName, player.x-15, player.y-30);
 
         bullets.forEach((b, i) => {
-            b.y -= b.v; ctx.fillStyle = "yellow"; ctx.fillRect(b.x-2, b.y, 4, 15);
-            if(b.y < 0) bullets.splice(i, 1);
+            b.y -= b.v; ctx.fillStyle = "#f1c40f"; ctx.fillRect(b.x-2, b.y, 4, 15);
+            if(b.y < 0) bullets.splice(i,1);
         });
 
         enemies.forEach((e, i) => {
-            e.y += e.b ? 0.7 : 1.8;
+            e.y += e.b ? 1 : 2;
             ctx.beginPath(); ctx.arc(e.x, e.y, e.r, 0, Math.PI*2);
-            ctx.fillStyle = e.b ? "purple" : "#ff4444"; ctx.fill();
+            ctx.fillStyle = e.b ? "#8e44ad" : "#e74c3c"; ctx.fill();
             
-            // شريط الدم فوق الزومبي
-            ctx.fillStyle = "#555"; ctx.fillRect(e.x-e.r, e.y-e.r-10, e.r*2, 5);
-            ctx.fillStyle = "#0f0"; ctx.fillRect(e.x-e.r, e.y-e.r-10, (e.r*2)*(e.hp/e.max), 5);
-
             bullets.forEach((b, bi) => {
-                let dist = Math.hypot(b.x - e.x, b.y - e.y);
-                if(dist < e.r) {
+                let d = Math.hypot(b.x - e.x, b.y - e.y);
+                if(d < e.r) {
                     e.hp--; bullets.splice(bi, 1);
                     if(e.hp <= 0) {
-                        cash += e.b ? 100 : 10;
-                        if(e.b) { lvl++; document.getElementById('h-lvl').innerText = lvl; }
-                        enemies.splice(i, 1);
-                        document.getElementById('h-cash').innerText = cash;
+                        score += 10; enemies.splice(i, 1);
+                        document.getElementById('c').innerText = score;
                     }
                 }
             });
         });
-        requestAnimationFrame(update);
+        requestAnimationFrame(draw);
     }
 </script>
 </body>
 </html>
+
 
 
 
